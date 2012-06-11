@@ -1,14 +1,7 @@
 # -*- coding:utf-8 -*-
 from rdfalchemy.sparql.sesame2 import SesameGraph
-from rdflib import Namespace, BNode
+from rdflib import BNode
 
-OPENSAHARA = Namespace('http://rdf.opensahara.com/search#')
-ORG = Namespace('http://www.w3.org/ns/org#')
-DCT = Namespace('http://purl.org/dc/terms/')
-CTAG = Namespace('http://commontag.org/ns#')
-FOAF = Namespace('http://xmlns.com/foaf/0.1/')
-RDFS = Namespace('http://www.w3.org/2000/01/rdf-schema#')
-RDF = Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
 
 
 class Repository(SesameGraph):

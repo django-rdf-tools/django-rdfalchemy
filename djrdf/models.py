@@ -1,11 +1,13 @@
 # -*- coding:utf-8 -*-
 from django.utils.translation import ugettext_lazy as _
 from django.db import models
-from django.db.models import CharField
-from rdfalchemy import rdfSubject, rdfSingle
+# from django.db.models import CharField
+from rdfalchemy import rdfSubject, rdfSingle, rdfMultiple
+from rdfalchemy.descriptors import rdfAbstract
 import rdflib
-from repository import RDFS
-
+from settings import RDFS, RDF, OWL
+from tools import prefixNameForPred
+from django_extensions.db import fields as exfields
 
 # We store here the whole mecanism to mix together django model objects and openrdf objects
 # with the help of rdfalchemy
@@ -19,12 +21,40 @@ from repository import RDFS
 #    ....
 
 
+
+
+import pickle
+
+
+# Introspection let us to add attributs field on the fly
+# This class aims to store the fm
+class FlyAttr(models.Model):
+    modelName = models.CharField(max_length=100)
+    key = models.CharField(max_length=50)
+    value = models.TextField()
+
+    def __repr__(self):
+        """ To be compliante with the rdfSubject representation """
+        return "%s('%s')" % (self.modelName, self.key)
+
+    def __str__(self):
+        return self.__repr__()
+
+    @staticmethod
+    def reload():
+        print "ENTER load FLY ATTR"
+        mm = models.get_models()
+        mname = {}
+        for m in mm:
+            mname[m.__name__] = m
+        for fattr in FlyAttr.objects.all():
+            setattr(mname[fattr.modelName], fattr.key, pickle.loads(str(fattr.value)))
+
+
+
+
 # A class where every common methods are stored
 class myRdfSubject(rdfSubject):
-
-    # It is false that every rdfSubject has an rdfs:label, but
-    # as it occurs very often.... it is a way not to forget it
-    label = rdfSingle(RDFS.label)
 
     # The _remove methode delele only triples where self.resUri
     # occurs as the subject of the triple
@@ -43,9 +73,11 @@ class myRdfSubject(rdfSubject):
 # Be careful, when deleting an rddfSubject with sesame.myRdfSubject.remove(), this call
 # will also call the delete method of the Model class
 class djRdf(models.Model):
+
+    created = exfields.CreationDateTimeField(_(u'created'), null=True)
+    modified = exfields.ModificationDateTimeField(_(u'modified'), null=True)
     # the uri
-    # TODO : need a validator (uri validator)
-    uri = CharField(max_length=250)
+    uri = models.CharField(max_length=250)
 
     class Meta:
         abstract = True
@@ -97,19 +129,113 @@ class djRdf(models.Model):
         super(djRdf, self).__init__(**kwargs)
         # oui car la methode __init__ de Model appelle cette de rdfSubject et
         # créer un blank node
-        if kwargs.has_key('uri'):
+        if 'uri' in kwargs:
             self.resUri = rdflib.term.URIRef(kwargs['uri'])
 
     def __repr__(self):
         """ To be compliante with the rdfSubject representation """
         return "%s('%s')" % (self.__class__.__name__, self.n3())
 
+    def __str__(self):
+        return str(self.resUri)
+
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self._get_pk_val() == other._get_pk_val() and self.uri == other.uri
 
     def save(self, *args, **kwargs):
         self.resUri = rdflib.term.URIRef(self.uri)
+        if self.uri != '':
+            # It is important, if the resource is creted in django ORM
+            # first and if the uri does not exists before
+            self.db.add((self, RDF.type, self.rdf_type))
         # Call the "real" save() method.
         super(djRdf, self).save(*args, **kwargs)
+
+
+    # This method is used to build and set the attributs according to the
+    # triples list in parameters.
+    # If this method is called, this means that from de subject of the triples
+    # its class has been set
+    def addTriples(self, triples):
+        # store  the triples according to the pred
+        pred = {}
+        for (s, p, o) in triples:
+            if p in pred:
+                pred[p].append(o)
+            else:
+                pred[p] = [o]
+        attrlist = self.__class__.__dict__
+        for (p, olist) in pred.iteritems():
+            # look for an attribut corresponding to this predicat
+            attr = None
+            for (aname, adef) in attrlist.iteritems():
+                if isinstance(adef, rdfAbstract):
+                    if (adef.pred == p):
+                        attr = aname
+                        break
+
+            # This attribut does not exist yet. Just create id and set its value
+            if (attr == None):
+                # version simplifiée
+                # for o in olist:
+                #     self.db.add((self.resUri, p, o))
+
+                # Introspection version: attributes create on the fly
+                # The attribut name is made from the predicat uri...
+                # I hope it could be safe.
+                attr = prefixNameForPred(p)
+                # special case for rdf_type because of ....
+                # triples are simply added
+                if attr == 'rdf_type':
+                    for o in olist:
+                        self.db.add((self.resUri, p, o))
+                else:
+                    if attr in attrlist:
+                        # chose another name
+                        raise Exception("NYI chose an other name for %s" % attr)
+                    # the cardinality defined if we use a rdfSingle or rdfMultiple
+                    # Thus we need to parse the graph correponding to the uri of thr property
+                    # TODO : something more complex to deal with owl:cardinality
+                    gr = rdflib.Graph()
+                    try:
+                        gr.parse(p)
+                    except:
+                        # It is impossible to access the the graph of the
+                        # property. Let's do the simplest thing we could do
+                        for o in olist:
+                            self.db.add((self.resUri, p, o))
+                    types = gr.objects(p, RDF.type)
+                    ranges = list(gr.objects(p, RDFS.range))
+                    if OWL.FunctionalProperty in types or OWL.InverseFunctionalProperty in types:
+                        # look for possible range_type
+                        if len(ranges) == 1  and not (RDFS.Literal in ranges):
+                            descriptor = rdfSingle(p, range_type=ranges[0])
+                        else:
+                            descriptor = rdfSingle(p)
+                        setattr(self.__class__, attr, descriptor)
+                        FlyAttr.objects.get_or_create(modelName=self.__class__.__name__,
+                                    key=attr,
+                                    value=pickle.dumps(descriptor))
+                        setattr(self, attr, olist[0])
+                    else:
+                        # look for possible range_type
+                        if len(ranges) == 1  and not (RDFS.Literal in ranges): 
+                            descriptor = rdfMultiple(p, range_type=ranges[0])
+                        else:
+                            descriptor = rdfMultiple(p)
+                        setattr(self.__class__, attr, descriptor)
+                        FlyAttr.objects.get_or_create(modelName=self.__class__.__name__,
+                                    key=attr,
+                                    value=pickle.dumps(descriptor))
+                        setattr(self, attr, olist) 
+            else:
+                # attr contains the name of the attribut.... just set the new values
+                if isinstance(getattr(self.__class__, attr), rdfSingle):
+                    setattr(self, attr, olist[0])
+                else:
+                    setattr(self, attr, olist)
+
+
+
 
 

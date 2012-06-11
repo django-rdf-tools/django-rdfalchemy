@@ -9,7 +9,7 @@ class djRdfForm():
 
     def form(self, obj):
         fs = FieldSet(self.model)
-        fs = self._configure(fs, obj)
+        fs = self._configure(fs)
         fs = fs.bind(obj)
         return fs
 
