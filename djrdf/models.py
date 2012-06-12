@@ -8,22 +8,13 @@ import rdflib
 from settings import RDFS, RDF, OWL
 from tools import prefixNameForPred
 from django_extensions.db import fields as exfields
-
-# We store here the whole mecanism to mix together django model objects and openrdf objects
-# with the help of rdfalchemy
-# Mixing classes have to inherite from djRdf and myRdfSubject (or rdfalchemy.rdfSubject) classes
-# in this order.....
-# example 
-# class Organization(djRdf, myRdfSubject):
-#    # rdf attributes
-#    ...
-#    # django.model attributes
-#    ....
-
-
-
-
 import pickle
+
+
+
+# Serializer
+rdflib.plugin.register('json-ld', rdflib.plugin.Serializer,
+        'rdflib_jsonld.jsonld_serializer', 'JsonLDSerializer')
 
 
 # Introspection let us to add attributs field on the fly
@@ -50,6 +41,20 @@ class FlyAttr(models.Model):
         for fattr in FlyAttr.objects.all():
             setattr(mname[fattr.modelName], fattr.key, pickle.loads(str(fattr.value)))
 
+
+
+
+
+# We store here the whole mecanism to mix together django model objects and openrdf objects
+# with the help of rdfalchemy
+# Mixing classes have to inherite from djRdf and myRdfSubject (or rdfalchemy.rdfSubject) classes
+# in this order.....
+# example 
+# class Organization(djRdf, myRdfSubject):
+#    # rdf attributes
+#    ...
+#    # django.model attributes
+#    ....
 
 
 
@@ -142,10 +147,14 @@ class djRdf(models.Model):
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self._get_pk_val() == other._get_pk_val() and self.uri == other.uri
 
+ 
+    # TODO : It is possible the we have to set all "rdfalchemy" fields
+    # to None in order, that they are reinitialized
     def save(self, *args, **kwargs):
         self.resUri = rdflib.term.URIRef(self.uri)
+        # USELESS?????
         if self.uri != '':
-            # It is important, if the resource is creted in django ORM
+            # It is important, if the resource is created in django ORM
             # first and if the uri does not exists before
             self.db.add((self, RDF.type, self.rdf_type))
         # Call the "real" save() method.
@@ -234,6 +243,16 @@ class djRdf(models.Model):
                     setattr(self, attr, olist[0])
                 else:
                     setattr(self, attr, olist)
+
+    def toJson(self):
+        triples = self.db.triples((self.resUri, None, None))
+        g = rdflib.Graph()
+        try:
+            while True:
+                g.add(triples.next())
+        except:
+            pass
+        return g.serialize(format='json-ld')
 
 
 

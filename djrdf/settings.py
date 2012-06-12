@@ -43,3 +43,9 @@ DJRDF_NS = dict(
     v=V,
     locn=LOCN
     ) 
+
+
+FEED_NAMES = ['organization']
+# Later ....
+# FEED_NAMES = ['organization', 'person', 'role', 'product', 'engagement',
+#               'relation', 'exchange', 'contact', 'article']
