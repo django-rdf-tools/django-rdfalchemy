@@ -1,7 +1,10 @@
 # -*- coding:utf-8 -*-
 from rdflib import Namespace
 
-COMMON_DOMAIN_NAME = 'http://data.economie-solidaire.fr'
+COMMON_DOMAIN_NAME = [
+    'http://data.economie-solidaire.fr', 
+    'http://rdf.insee.fr/geo/2011/'
+    ]
 
 OPENSAHARA = Namespace('http://rdf.opensahara.com/search#')
 ORG = Namespace('http://www.w3.org/ns/org#')

@@ -78,7 +78,9 @@ class myRdfSubject(rdfSubject):
 # Be careful, when deleting an rddfSubject with sesame.myRdfSubject.remove(), this call
 # will also call the delete method of the Model class
 class djRdf(models.Model):
-
+    # TODO : ces deux champs doivent disparaitre.... cela casse la logique
+    # rdf. Ils ne sont la  que pour nourrir les feeds. Charcher comment remplir 
+    # le feeds a l'aide query sparql
     created = exfields.CreationDateTimeField(_(u'created'), null=True)
     modified = exfields.ModificationDateTimeField(_(u'modified'), null=True)
     # the uri
@@ -236,12 +238,21 @@ class djRdf(models.Model):
                         FlyAttr.objects.get_or_create(modelName=self.__class__.__name__,
                                     key=attr,
                                     value=pickle.dumps(descriptor))
+                        # attention aux triplets qu sont deja dans le store
+                        # il faut les supprimer
+                        oldvalue = self.db.triples((self, p, None))
+                        for tr in oldvalue:
+                            self.db.remove(tr)
                         setattr(self, attr, olist) 
             else:
                 # attr contains the name of the attribut.... just set the new values
                 if isinstance(getattr(self.__class__, attr), rdfSingle):
                     setattr(self, attr, olist[0])
                 else:
+                    # attention ici on ne supprime pas les vieux
+                    oldvalue = self.db.triples((self, p, None))
+                    for tr in oldvalue:
+                        self.db.remove(tr)
                     setattr(self, attr, olist)
 
     def toJson(self):

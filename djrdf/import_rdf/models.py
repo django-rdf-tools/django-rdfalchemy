@@ -115,8 +115,17 @@ class EntrySite(models.Model):
                         addtriples.append((s, p, o))
                     else:
                         sNs = djrdf.tools.splitUri(s)[0]
-                        if sNs.startswith(self.home) or sNs.startswith(COMMON_DOMAIN_NAME):
+                        if sNs.startswith(self.home):
                             addtriples.append((s, p, o))
+                        # or sNs.startswith(COMMON_DOMAIN_NAME)
+                        elif COMMON_DOMAIN_NAME != []:
+                            i = 0
+                            sw = sNs.startswith(COMMON_DOMAIN_NAME[i])
+                            while (not sw) and (i < len(COMMON_DOMAIN_NAME)):
+                                i = i + 1
+                                sw = sNs.startswith(COMMON_DOMAIN_NAME[i])
+                            if sw:
+                                addtriples.append((s, p, o))
                         elif isinstance(o, URIRef):
                             oNs = djrdf.tools.splitUri(o)[0]
                             if oNs.startswith(self.home):
@@ -128,7 +137,7 @@ class EntrySite(models.Model):
             except StopIteration:
                 pass
 
-            if djRdfModel:
+            if djRdfModel and addtriples != []:
                 djSubject, created = djRdfModel.objects.get_or_create(uri=subject)
                 djSubject.addTriples(addtriples)
                 djSubject.save()
