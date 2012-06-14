@@ -20,6 +20,7 @@ LOCN = Namespace('http://www.w3.org/ns/locn#')
 SKOS = Namespace('http://www.w3.org/2004/02/skos/core#')
 LEGAL = Namespace('http://www.w3.org/ns/legal#')
 SKOSXL = Namespace('http://www.w3.org/2008/05/skos-xl#')
+GR = Namespace('http://purl.org/goodrelations/v1#')
 
 
  # 'xsd': 'http://www.w3.org/2001/XMLSchema#',
@@ -44,7 +45,8 @@ DJRDF_NS = dict(
     owl=OWL,
     ess=ESS,
     v=V,
-    locn=LOCN
+    locn=LOCN,
+    gr=GR
     ) 
 
 

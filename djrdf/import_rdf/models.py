@@ -121,7 +121,7 @@ class EntrySite(models.Model):
                         elif COMMON_DOMAIN_NAME != []:
                             i = 0
                             sw = sNs.startswith(COMMON_DOMAIN_NAME[i])
-                            while (not sw) and (i < len(COMMON_DOMAIN_NAME)):
+                            while (not sw) and (i < len(COMMON_DOMAIN_NAME) - 1):
                                 i = i + 1
                                 sw = sNs.startswith(COMMON_DOMAIN_NAME[i])
                             if sw:

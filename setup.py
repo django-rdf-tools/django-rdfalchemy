@@ -18,7 +18,7 @@ setup(
     name='django-rdfalchemy',
     version = VERSION,
     description='Extension to mix Django ORM and RDFAlchemy models',
-    packages=[ 'djrdf'],
+    packages=[ 'djrdf','djrdf.import_rdf'],
     include_package_data=True,
     author='Cooperative Quinode',
     author_email='claude.huchet@quinode.fr',
