@@ -5,7 +5,8 @@ from django.db import models
 from rdfalchemy import rdfSubject, rdfSingle, rdfMultiple
 from rdfalchemy.descriptors import rdfAbstract
 import rdflib
-from settings import RDFS, RDF, OWL
+from django.conf import settings
+# from settings import RDFS, RDF, OWL
 from tools import prefixNameForPred
 from django_extensions.db import fields as exfields
 import pickle
@@ -160,7 +161,7 @@ class djRdf(models.Model):
         if self.uri != '':
             # It is important, if the resource is created in django ORM
             # first and if the uri does not exists before
-            self.db.add((self, RDF.type, self.rdf_type))
+            self.db.add((self, settings.RDF.type, self.rdf_type))
         # Call the "real" save() method.
         super(djRdf, self).save(*args, **kwargs)
         ping_hub('http://%s/%s/%s' % (Site.objects.get_current(), 'feed', self.__class__.__name__.lower()))
@@ -218,11 +219,11 @@ class djRdf(models.Model):
                         # property. Let's do the simplest thing we could do
                         for o in olist:
                             self.db.add((self.resUri, p, o))
-                    types = gr.objects(p, RDF.type)
-                    ranges = list(gr.objects(p, RDFS.range))
-                    if OWL.FunctionalProperty in types or OWL.InverseFunctionalProperty in types:
+                    types = gr.objects(p, settings.RDF.type)
+                    ranges = list(gr.objects(p, settings.RDFS.range))
+                    if settings.OWL.FunctionalProperty in types or settings.OWL.InverseFunctionalProperty in types:
                         # look for possible range_type
-                        if len(ranges) == 1  and not (RDFS.Literal in ranges):
+                        if len(ranges) == 1  and not (settings.RDFS.Literal in ranges):
                             descriptor = rdfSingle(p, range_type=ranges[0])
                         else:
                             descriptor = rdfSingle(p)
@@ -233,7 +234,7 @@ class djRdf(models.Model):
                         setattr(self, attr, olist[0])
                     else:
                         # look for possible range_type
-                        if len(ranges) == 1  and not (RDFS.Literal in ranges): 
+                        if len(ranges) == 1  and not (settings.RDFS.Literal in ranges): 
                             descriptor = rdfMultiple(p, range_type=ranges[0])
                         else:
                             descriptor = rdfMultiple(p)
