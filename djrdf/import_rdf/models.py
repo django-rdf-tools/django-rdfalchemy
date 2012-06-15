@@ -2,7 +2,8 @@
 # Create your models here.
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from djrdf.settings import *
+from django.conf import settings
+from django_push.subscriber.models import Subscription
 from djrdf.repository import Repository
 from rdflib import Graph, plugin, store, URIRef
 import djrdf.tools
@@ -88,10 +89,10 @@ class EntrySite(models.Model):
             sesame = Repository(repository, context=ctx)
         unknownTypes = []
         mapDjrdfTypes = djrdf.tools.rdfDjrdfMapTypes()
-        subjects = graph.subjects(RDF.type, rdfType)
+        subjects = graph.subjects(settings.RDF.type, rdfType)
         for subject in subjects:
             print "Add %s in %s" % (subject, repository) 
-            types = graph.objects(subject, RDF.type)
+            types = graph.objects(subject, settings.RDF.type)
             # look for and djRdf.models corresponding to that type
             djRdfModel = None
             for t in types:
@@ -118,12 +119,12 @@ class EntrySite(models.Model):
                         if sNs.startswith(self.home):
                             addtriples.append((s, p, o))
                         # or sNs.startswith(COMMON_DOMAIN_NAME)
-                        elif COMMON_DOMAIN_NAME != []:
+                        elif settings.COMMON_DOMAIN_NAME != []:
                             i = 0
-                            sw = sNs.startswith(COMMON_DOMAIN_NAME[i])
-                            while (not sw) and (i < len(COMMON_DOMAIN_NAME) - 1):
+                            sw = sNs.startswith(settings.COMMON_DOMAIN_NAME[i])
+                            while (not sw) and (i < len(settings.COMMON_DOMAIN_NAME) - 1):
                                 i = i + 1
-                                sw = sNs.startswith(COMMON_DOMAIN_NAME[i])
+                                sw = sNs.startswith(settings.COMMON_DOMAIN_NAME[i])
                             if sw:
                                 addtriples.append((s, p, o))
                         elif isinstance(o, URIRef):
@@ -153,7 +154,7 @@ class EntrySite(models.Model):
 
 
     def updateFromFeeds(self, repository, ctx='default'):
-        for f in FEED_NAMES:
+        for f in settings.FEED_NAMES:
             feed_url = self.feed + f + '/'
             parsedFeed = feedparser.parse(feed_url)
             print "Parse feed %s" % feed_url
@@ -166,7 +167,7 @@ class EntrySite(models.Model):
                 self.toSesameRep(repository, g, ctx)
 
     def subscribFeeds(self):
-        for f in FEED_NAMES:
+        for f in settings.FEED_NAMES:
             feed_url = self.feed + f + '/'
             parsedFeed = feedparser.parse(feed_url)
             if 'links' in parsedFeed.feed:
