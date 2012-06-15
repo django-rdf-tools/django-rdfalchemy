@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 from rdfalchemy.sparql.sesame2 import SesameGraph
 from rdflib import BNode
-
+from django.conf import settings
 
 
 class Repository(SesameGraph):
@@ -11,9 +11,12 @@ class Repository(SesameGraph):
     # the context parametre defines a context, that will add this context
     # to all new triples added in the repository.
     # But we can't see this context with the help of the contexts attribut
-    def __init__(self, repository, serverName='localhost', portNumber='8080', context=None):
+    def __init__(self, repository, context=None):
         """  repository is th repository id as express in opendRdf documention"""
-        url = "http://%s:%s/openrdf-sesame/repositories/%s" % (serverName, portNumber, repository)
+        url = "http://%s:%s/openrdf-sesame/repositories/%s" % (
+               settings.OPENRDF_SERVER_NAME, 
+               settings.OPENRDF_SERVER_PORT, 
+               repository)
         super(Repository, self).__init__(url, context)
         #self.namespaces['search'] = 'http://rdf.opensahara.com/search#'
 

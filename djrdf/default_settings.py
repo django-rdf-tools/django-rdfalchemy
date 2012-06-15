@@ -1,6 +1,11 @@
 # -*- coding:utf-8 -*-
-from rdflib import Namespace
 
+
+PUSH_HUB = 'https://quinode.superfeedr.com/'
+
+
+# Useful contantes
+from rdflib import Namespace
 COMMON_DOMAIN_NAME = [
     'http://data.economie-solidaire.fr', 
     'http://rdf.insee.fr/geo/2011/'
@@ -21,6 +26,7 @@ SKOS = Namespace('http://www.w3.org/2004/02/skos/core#')
 LEGAL = Namespace('http://www.w3.org/ns/legal#')
 SKOSXL = Namespace('http://www.w3.org/2008/05/skos-xl#')
 GR = Namespace('http://purl.org/goodrelations/v1#')
+PERSON = Namespace('http://www.w3.org/ns/person#')
 
  # 'xsd': 'http://www.w3.org/2001/XMLSchema#',
  # 'insee': u'http://rdf.insee.fr/geo/2011/',
@@ -45,7 +51,8 @@ DJRDF_NS = dict(
     ess=ESS,
     v=V,
     locn=LOCN,
-    gr=GR
+    gr=GR,
+    person=PERSON
     ) 
 
 
