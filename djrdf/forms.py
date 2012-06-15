@@ -2,6 +2,13 @@
 from django.utils.translation import ugettext_lazy as _
 from djrdf.models import djRdf
 from formalchemy.ext.rdf import FieldSet, Grid
+from formalchemy.validators import ValidationError
+
+
+def posint(value, field):
+    if not (isinstance(value, int) and value >= 0):
+        raise ValidationError(_(u'Value must a positive integer'))
+
 
 
 class djRdfForm():

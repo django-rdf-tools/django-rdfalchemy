@@ -76,8 +76,8 @@ class EntrySite(models.Model):
     # Using a 'construct query' this method imports triples
     # from the graph (the first time, and for dumps the graph is self.parql())
     # The method to imported triples is described with mode details in doc
-    # We process from the subject
-    def toSesameRep(self, repository, graph, ctx='default'):
+    # We process from the subjectrfd
+    def toSesameRep(self, repository, graph, ctx='default', rdfType=None):
         # lets use the context posibility, should be useless
         if ctx == None:
             sesame = Repository(repository)
@@ -88,7 +88,7 @@ class EntrySite(models.Model):
             sesame = Repository(repository, context=ctx)
         unknownTypes = []
         mapDjrdfTypes = djrdf.tools.rdfDjrdfMapTypes()
-        subjects = graph.subjects(RDF.type, None)
+        subjects = graph.subjects(RDF.type, rdfType)
         for subject in subjects:
             print "Add %s in %s" % (subject, repository) 
             types = graph.objects(subject, RDF.type)

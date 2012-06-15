@@ -22,7 +22,6 @@ LEGAL = Namespace('http://www.w3.org/ns/legal#')
 SKOSXL = Namespace('http://www.w3.org/2008/05/skos-xl#')
 GR = Namespace('http://purl.org/goodrelations/v1#')
 
-
  # 'xsd': 'http://www.w3.org/2001/XMLSchema#',
  # 'insee': u'http://rdf.insee.fr/geo/2011/',
  # 'skosxl': u'http://www.w3.org/2008/05/skos-xl#',
@@ -50,7 +49,7 @@ DJRDF_NS = dict(
     ) 
 
 
-FEED_NAMES = ['organization']
+FEED_NAMES = ['organization','ontact', 'echange']
 # Later ....
 # FEED_NAMES = ['organization', 'person', 'role', 'product', 'engagement',
 #               'relation', 'exchange', 'contact', 'article']
