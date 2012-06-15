@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-from settings import DJRDF_NS
+from django.conf import settings
 from django.db import models
 import djrdf
 from rdflib import Namespace
@@ -11,7 +11,7 @@ from rdflib import Namespace
 
 
 _reverseNs = {}
-for (k, v) in DJRDF_NS.iteritems():
+for (k, v) in settings.DJRDF_NS.iteritems():
     _reverseNs[v] = k
 
 
