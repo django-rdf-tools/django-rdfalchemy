@@ -56,7 +56,7 @@ DJRDF_NS = dict(
     ) 
 
 
-FEED_NAMES = ['organization','ontact', 'echange']
+FEED_NAMES = ['organization', 'contact', 'exchange']
 # Later ....
 # FEED_NAMES = ['organization', 'person', 'role', 'product', 'engagement',
 #               'relation', 'exchange', 'contact', 'article']

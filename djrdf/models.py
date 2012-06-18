@@ -36,7 +36,7 @@ class FlyAttr(models.Model):
 
     @staticmethod
     def reload():
-        print "ENTER load FLY ATTR"
+        # print "ENTER load FLY ATTR"
         mm = models.get_models()
         mname = {}
         for m in mm:

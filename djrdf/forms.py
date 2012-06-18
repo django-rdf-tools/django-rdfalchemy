@@ -16,8 +16,9 @@ class djRdfForm():
 
     def form(self, obj):
         fs = FieldSet(self.model)
-        fs = self._configure(fs)
         fs = fs.bind(obj)
+        fs = self._configure(fs)
+        fs.rebind(obj)
         return fs
 
     def grid(self, obj):
