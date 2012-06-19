@@ -30,6 +30,7 @@ PERSON = Namespace('http://www.w3.org/ns/person#')
 SIOC = Namespace('http://rdfs.org/sioc/ns#')
 RSS = Namespace('http://purl.org/net/rss1.1#')
 EVENT = Namespace('http://purl.org/NET/c4dm/event.owl#')
+OV = Namespace('http://open.vocab.org/terms/')
 
  # 'xsd': 'http://www.w3.org/2001/XMLSchema#',
  # 'insee': u'http://rdf.insee.fr/geo/2011/',
@@ -44,7 +45,7 @@ EVENT = Namespace('http://purl.org/NET/c4dm/event.owl#')
 
 DJRDF_NS = dict(
     opens=OPENSAHARA, skos=SKOS, legal=LEGAL,
-    org=ORG, skosxl=SKOSXL,
+    org=ORG, skosxl=SKOSXL, ov=OV,
     dct=DCT,
     ctag=CTAG,
     foaf=FOAF,
