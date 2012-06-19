@@ -27,6 +27,9 @@ LEGAL = Namespace('http://www.w3.org/ns/legal#')
 SKOSXL = Namespace('http://www.w3.org/2008/05/skos-xl#')
 GR = Namespace('http://purl.org/goodrelations/v1#')
 PERSON = Namespace('http://www.w3.org/ns/person#')
+SIOC = Namespace('http://rdfs.org/sioc/ns#')
+RSS = Namespace('http://purl.org/net/rss1.1#')
+EVENT = Namespace('http://purl.org/NET/c4dm/event.owl#')
 
  # 'xsd': 'http://www.w3.org/2001/XMLSchema#',
  # 'insee': u'http://rdf.insee.fr/geo/2011/',
@@ -52,7 +55,9 @@ DJRDF_NS = dict(
     v=V,
     locn=LOCN,
     gr=GR,
-    person=PERSON
+    person=PERSON,
+    sioc=SIOC,
+    rss=RSS, event=EVENT
     ) 
 
 

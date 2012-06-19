@@ -63,6 +63,9 @@ class FlyAttr(models.Model):
 
 # A class where every common methods are stored
 class myRdfSubject(rdfSubject):
+    dct_created = rdfSingle(settings.DCT.created)
+    dct_modified = rdfSingle(settings.DCT.modified)
+
 
     # The _remove methode delele only triples where self.resUri
     # occurs as the subject of the triple
