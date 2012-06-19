@@ -3,7 +3,8 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
-from django_push.subscriber.models import Subscription
+from djpubsubhubbub.models import Subscription
+# from django_push.subscriber.models import Subscription
 from djrdf.repository import Repository
 from rdflib import Graph, plugin, store, URIRef
 import djrdf.tools
