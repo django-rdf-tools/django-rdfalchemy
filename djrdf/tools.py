@@ -1,19 +1,15 @@
 # -*- coding:utf-8 -*-
+# Some useful functions to deal with rdflib's URIRef and Namespaces
+
 from django.conf import settings
 from django.db import models
 import djrdf
 from rdflib import Namespace
 
 
-
-# In this file one can found some  usefull function to deal
-# with uri (as rdflib.term.URIRef) or Namespaces
-
-
 _reverseNs = {}
-for (k, v) in settings.DJRDF_NS.iteritems():
+for (k, v) in settings.NS.iteritems():
     _reverseNs[v] = k
-
 
 
 def splitUri(uri):

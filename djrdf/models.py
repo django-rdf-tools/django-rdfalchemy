@@ -14,14 +14,13 @@ from django.contrib.sites.models import Site
 from django_push.publisher import ping_hub
 
 
-
 # Serializer
 rdflib.plugin.register('json-ld', rdflib.plugin.Serializer,
         'rdflib_jsonld.jsonld_serializer', 'JsonLDSerializer')
 
 
-# Introspection let us to add attributs field on the fly
-# This class aims to store the fm
+# Introspection let us add attributes fields on the fly
+# This class aims to store the resulting attributes
 class FlyAttr(models.Model):
     modelName = models.CharField(max_length=100)
     key = models.CharField(max_length=50)
@@ -45,14 +44,10 @@ class FlyAttr(models.Model):
             setattr(mname[fattr.modelName], fattr.key, pickle.loads(str(fattr.value)))
 
 
-
-
-
-# We store here the whole mecanism to mix together django model objects and openrdf objects
-# with the help of rdfalchemy
-# Mixing classes have to inherite from djRdf and myRdfSubject (or rdfalchemy.rdfSubject) classes
-# in this order.....
-# example 
+# Mechanism to mix django model objects and RDF data with the help of RDFAlchemy
+# Composite classes inherit from djRdf and myRdfSubject (or rdfalchemy.rdfSubject) classes
+# in this *exact* order, example:
+# 
 # class Organization(djRdf, myRdfSubject):
 #    # rdf attributes
 #    ...
@@ -60,16 +55,13 @@ class FlyAttr(models.Model):
 #    ....
 
 
-
 # A class where every common methods are stored
 class myRdfSubject(rdfSubject):
     dct_created = rdfSingle(settings.DCT.created)
     dct_modified = rdfSingle(settings.DCT.modified)
 
-
-    # The _remove methode delele only triples where self.resUri
-    # occurs as the subject of the triple
-
+    # The _remove method deletes all the triples which
+    # have  self.resUri as subject of the triple
     def remove(self):
         try:
             self.delete()
@@ -78,18 +70,19 @@ class myRdfSubject(rdfSubject):
         self._remove(self.db, cascade='all', objectCascade=True)
 
 
-# The "joint" class. This class is used only in multiple heritage context
-# One from rdfSubject (over classes by sesame.myRdfSubject class) and this one which
-# overclasses the models.Model class
-# Be careful, when deleting an rddfSubject with sesame.myRdfSubject.remove(), this call
-# will also call the delete method of the Model class
+# The "joint" class. This class is only used in a multiple heritage context :
+# - One class derived from rdfSubject (over classes by sesame.myRdfSubject class) 
+# - and the djRdf class which subclasses the Django Model class
+#
+# Warning : deleting a rdfSubject using myRdfSubject.remove() 
+# will also call the delete() method of the django Model class
+
 class djRdf(models.Model):
     # TODO : ces deux champs doivent disparaitre.... cela casse la logique
     # rdf. Ils ne sont la  que pour nourrir les feeds. Charcher comment remplir 
     # le feeds a l'aide query sparql
     created = exfields.CreationDateTimeField(_(u'created'), null=True)
     modified = exfields.ModificationDateTimeField(_(u'modified'), null=True)
-    # the uri
     uri = models.CharField(max_length=250)
 
     class Meta:
@@ -99,9 +92,9 @@ class djRdf(models.Model):
         # print "ENTER INIT with %s and %s" % (args, kwargs)
         # import pdb; pdb.set_trace();
         if args != ():
-            # As the objects inherites from differents classes
+            # As the objects inherits from differents classes
             # We have to discard the args in order to prepare the calls
-            # of the mothers' methods
+            # of the superclass methods
 
             # TODO C'est pas fini..... On perd trop de trucs
 
@@ -118,7 +111,7 @@ class djRdf(models.Model):
                             kwargs[lf[i].name] = args[i]
                     else:
                         raise Exception(_(u'Unhandled call for object %s with args %s and kwargs') % (self, args, kwargs))
-                # Here the instanceis created using the methodes of rdfSubject
+                # Here the instance is created using the methods of rdfSubject
                 else:
                     if isinstance(a0, rdfSubject):
                         kwargs['uri'] = a0.resUri
@@ -126,7 +119,7 @@ class djRdf(models.Model):
                         kwargs['uri'] = a0
                     else:
                         raise Exception(_(u'Unhandled call for object %s with args %s and kwargs') % (self, args, kwargs))
-                    # We have to make the links with de django database objects, if it exists
+                    # We have to make the links with the django objects, if it exists
                     try:
                         o = self.__class__.objects.get(uri=kwargs['uri'])
                         # id and uri are already set
@@ -134,14 +127,13 @@ class djRdf(models.Model):
                         for i in range(2, n):
                             kwargs[lf[i].name] = o.__dict__[lf[i].name]
                     except self.__class__.DoesNotExist:
-                        # Nothing to do.... waith for a save for example
+                        # Nothing to do.... wait for a save for example
                         pass
             else:
                 raise Exception(_(u'Unhandled call for object %s with args %s and kwargs') % (self, args, kwargs))
         # print "ARGs %s and %s" % (args, kwargs)
         super(djRdf, self).__init__(**kwargs)
-        # oui car la methode __init__ de Model appelle cette de rdfSubject et
-        # créer un blank node
+        # oui car la methode __init__ de Model appelle cette de rdfSubject et crée un blank node
         if 'uri' in kwargs:
             self.resUri = rdflib.term.URIRef(kwargs['uri'])
 
@@ -155,9 +147,8 @@ class djRdf(models.Model):
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self._get_pk_val() == other._get_pk_val() and self.uri == other.uri
 
- 
-    # TODO : It is possible the we have to set all "rdfalchemy" fields
-    # to None in order, that they are reinitialized
+    # TODO : It is possible that we have to set all "rdfalchemy" fields
+    # to None so that they are re-initialized
     def save(self, *args, **kwargs):
         self.resUri = rdflib.term.URIRef(self.uri)
         # USELESS?????
@@ -168,7 +159,6 @@ class djRdf(models.Model):
         # Call the "real" save() method.
         super(djRdf, self).save(*args, **kwargs)
         ping_hub('http://%s/%s/%s' % (Site.objects.get_current(), 'feed', self.__class__.__name__.lower()))
-
 
     # This method is used to build and set the attributs according to the
     # triples list in parameters.
@@ -184,7 +174,7 @@ class djRdf(models.Model):
                 pred[p] = [o]
         attrlist = self.__class__.__dict__
         for (p, olist) in pred.iteritems():
-            # look for an attribut corresponding to this predicat
+            # look for an attribute corresponding to this predicate
             attr = None
             for (aname, adef) in attrlist.iteritems():
                 if isinstance(adef, rdfAbstract):
@@ -192,15 +182,15 @@ class djRdf(models.Model):
                         attr = aname
                         break
 
-            # This attribut does not exist yet. Just create id and set its value
+            # This attribute does not exist yet. Just create id and set its value
             if (attr == None):
                 # version simplifiée
                 # for o in olist:
                 #     self.db.add((self.resUri, p, o))
 
                 # Introspection version: attributes create on the fly
-                # The attribut name is made from the predicat uri...
-                # I hope it could be safe.
+                # The attribute name is made from the predicate uri...
+                # Hope it could be safe.
                 attr = prefixNameForPred(p)
                 # special case for rdf_type because of ....
                 # triples are simply added
@@ -209,10 +199,10 @@ class djRdf(models.Model):
                         self.db.add((self.resUri, p, o))
                 else:
                     if attr in attrlist:
-                        # chose another name
+                        # choose another name
                         raise Exception("NYI chose an other name for %s" % attr)
                     # the cardinality defined if we use a rdfSingle or rdfMultiple
-                    # Thus we need to parse the graph correponding to the uri of thr property
+                    # Thus we need to parse the graph corresponding to the URI of the property
                     # TODO : something more complex to deal with owl:cardinality
                     gr = rdflib.Graph()
                     try:
@@ -252,7 +242,7 @@ class djRdf(models.Model):
                             self.db.remove(tr)
                         setattr(self, attr, olist) 
             else:
-                # attr contains the name of the attribut.... just set the new values
+                # attr contains the name of the attribute.... just set the new values
                 if isinstance(getattr(self.__class__, attr), rdfSingle):
                     setattr(self, attr, olist[0])
                 else:
@@ -270,7 +260,7 @@ class djRdf(models.Model):
                 g.add(triples.next())
         except:
             pass
-        # lets see if it is usefull to put also the "ValueOf"
+        # let's see if it is useful to put also the "ValueOf"
         triples = self.db.triples((None, None, self.resUri))
         try:
             while True:
