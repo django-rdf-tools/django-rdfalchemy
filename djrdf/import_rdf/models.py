@@ -169,14 +169,9 @@ class EntrySite(models.Model):
     def subscribFeeds(self):
         for f in settings.FEED_NAMES:
             feed_url = self.feed + f + '/'
-            parsedFeed = feedparser.parse(feed_url)
-            if 'links' in parsedFeed.feed:
-                for link in parsedFeed.feed.links:
-                    if link.rel == 'hub':
-                        # Hub detected!
-                        hub = link.href
-                        print "Subscribe to topic %s on HUB  %s" % (feed_url, hub)
-                        Subscription.objects.subscribe(feed_url, hub=hub)
+            hub = settings.SUPERFEEDR_HUB
+            print "Subscribe to topic %s on HUB  %s" % (feed_url, hub)
+            Subscription.objects.subscribe(feed_url, hub=hub)
 
 
 
