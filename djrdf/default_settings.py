@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 
 
-PUSH_HUB = 'https://quinode.superfeedr.com/'
+PUSH_HUB = 'http://quinode.superfeedr.com'
 
 
 # Useful contantes
