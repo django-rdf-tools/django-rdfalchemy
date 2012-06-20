@@ -14,10 +14,6 @@ import feedparser
 import datetime
 
 
-
-
-
-
 plugin.register(
         'SPARQLStore', store.Store,
         'rdflib_sparqlstore.SPARQLStore', 'SPARQLStore')
@@ -25,13 +21,10 @@ plugin.register('json-ld', plugin.Parser,
         'rdflib_jsonld.jsonld_parser', 'JsonLDParser')
 
 
-
 class SparqlQuery(models.Model):
-
     query = models.TextField(_(u'query'))
     label = models.CharField(_(u'Label'), max_length=300)
     notation = models.TextField(_(u'notation'), null=True, blank=True)
-
 
     class Meta:
         verbose_name = _(u'query')
@@ -50,7 +43,6 @@ class EntrySite(models.Model):
     logs = models.TextField(_(u'logs'), null=True, blank=True)
     # Je ne suis pas sur que ca soit important
     # queries = models.ManyToManyField(SparqlQuery, verbose_name=_(u'queries'), related_name='queries')
-
 
     class Meta:
         verbose_name = _(u'Site entries')
@@ -103,7 +95,7 @@ class EntrySite(models.Model):
                 else:
                     if not(t in unknownTypes):
                         unknownTypes.append(t)
-            # Get te Django models object
+            # Get the Django Model object
             addtriples = []
             triples = graph.triples((subject, None, None))
             try:
@@ -119,13 +111,13 @@ class EntrySite(models.Model):
                         sNs = djrdf.tools.splitUri(s)[0]
                         if sNs.startswith(self.home):
                             addtriples.append((s, p, o))
-                        # or sNs.startswith(COMMON_DOMAIN_NAME)
-                        elif settings.COMMON_DOMAIN_NAME != []:
+                        # or sNs.startswith(COMMON_DOMAINS)
+                        elif settings.COMMON_DOMAINS != []:
                             i = 0
-                            sw = sNs.startswith(settings.COMMON_DOMAIN_NAME[i])
-                            while (not sw) and (i < len(settings.COMMON_DOMAIN_NAME) - 1):
+                            sw = sNs.startswith(settings.COMMON_DOMAINS[i])
+                            while (not sw) and (i < len(settings.COMMON_DOMAINS) - 1):
                                 i = i + 1
-                                sw = sNs.startswith(settings.COMMON_DOMAIN_NAME[i])
+                                sw = sNs.startswith(settings.COMMON_DOMAINS[i])
                             if sw:
                                 addtriples.append((s, p, o))
                         elif isinstance(o, URIRef):
@@ -149,13 +141,12 @@ class EntrySite(models.Model):
                 for t in addtriples:
                     sesame.add(t)
         for t in unknownTypes:
-            self.addLog("The rdf:type %s is not handled yet by the agreator" % t)
+            self.addLog("The rdf:type %s is not handled yet by the aggregator" % t)
         # for the logs    
         self.save()
 
-
     def updateFromFeeds(self, repository, ctx='default'):
-        for f in settings.FEED_NAMES:
+        for f in settings.FEED_MODELS:
             feed_url = self.feed + f + '/'
             parsedFeed = feedparser.parse(feed_url)
             print "Parse feed %s" % feed_url
@@ -168,7 +159,7 @@ class EntrySite(models.Model):
                 self.toSesameRep(repository, g, ctx)
 
     def subscribFeeds(self):
-        for f in settings.FEED_NAMES:
+        for f in settings.FEED_MODELS:
             feed_url = self.feed + f + '/'
             hub = settings.SUPERFEEDR_HUB
             print "Subscribe to topic %s on HUB  %s" % (feed_url, hub)

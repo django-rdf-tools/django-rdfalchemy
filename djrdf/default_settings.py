@@ -1,68 +1,43 @@
 # -*- coding:utf-8 -*-
 
+class AttributeDict(dict): 
+    __getattr__ = dict.__getitem__
+    __setattr__ = dict.__setitem__
 
 PUSH_HUB = 'http://quinode.superfeedr.com'
 
-
-# Useful contantes
 from rdflib import Namespace
-COMMON_DOMAIN_NAME = [
+COMMON_DOMAINS = [
     'http://data.economie-solidaire.fr', 
     'http://rdf.insee.fr/geo/2011/'
     ]
 
-OPENSAHARA = Namespace('http://rdf.opensahara.com/search#')
-ORG = Namespace('http://www.w3.org/ns/org#')
-DCT = Namespace('http://purl.org/dc/terms/')
-CTAG = Namespace('http://commontag.org/ns#')
-FOAF = Namespace('http://xmlns.com/foaf/0.1/')
-RDFS = Namespace('http://www.w3.org/2000/01/rdf-schema#')
-RDF = Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
-OWL = Namespace('http://www.w3.org/2002/07/owl#')
-ESS = Namespace('http://ns.economie-solidaire.fr/ess#')
-V = Namespace('http://www.w3.org/2006/vcard/ns#')
-LOCN = Namespace('http://www.w3.org/ns/locn#')
-SKOS = Namespace('http://www.w3.org/2004/02/skos/core#')
-LEGAL = Namespace('http://www.w3.org/ns/legal#')
-SKOSXL = Namespace('http://www.w3.org/2008/05/skos-xl#')
-GR = Namespace('http://purl.org/goodrelations/v1#')
-PERSON = Namespace('http://www.w3.org/ns/person#')
-SIOC = Namespace('http://rdfs.org/sioc/ns#')
-RSS = Namespace('http://purl.org/net/rss1.1#')
-EVENT = Namespace('http://purl.org/NET/c4dm/event.owl#')
-OV = Namespace('http://open.vocab.org/terms/')
 
- # 'xsd': 'http://www.w3.org/2001/XMLSchema#',
- # 'insee': u'http://rdf.insee.fr/geo/2011/',
- # 'skosxl': u'http://www.w3.org/2008/05/skos-xl#',
- # 'gr': u'http://purl.org/goodrelations/v1#',
- # 'event': u'http://purl.org/NET/c4dm/event.owl#',
- # 'sioc': u'http://rdfs.org/sioc/ns#',
- # 'opens': u'http://rdf.opensahara.com/type/geo/',
- # 'person': u'http://www.w3.org/ns/person#',
- # 'schema': u'http://schema.org/',
- # 'rss': u'http://purl.org/net/rss1.1#'
+DJRDF_NS = AttributeDict(
 
-DJRDF_NS = dict(
-    opens=OPENSAHARA, skos=SKOS, legal=LEGAL,
-    org=ORG, skosxl=SKOSXL, ov=OV,
-    dct=DCT,
-    ctag=CTAG,
-    foaf=FOAF,
-    rdfs=RDFS,
-    rdf=RDF,
-    owl=OWL,
-    ess=ESS,
-    v=V,
-    locn=LOCN,
-    gr=GR,
-    person=PERSON,
-    sioc=SIOC,
-    rss=RSS, event=EVENT
-    ) 
+    # Base
+    rdf=Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#'),
+    rdfs=Namespace('http://www.w3.org/2000/01/rdf-schema#'),
+    owl=Namespace('http://www.w3.org/2002/07/owl#'),
+    xsd=Namespace('http://www.w3.org/2001/XMLSchema#'),
+
+    # Classics
+    gr=Namespace('http://purl.org/goodrelations/v1#'),
+    dct=Namespace('http://purl.org/dc/terms/'),
+    foaf=Namespace('http://xmlns.com/foaf/0.1/'),
+    skos=Namespace('http://www.w3.org/2004/02/skos/core#'),
+    skosxl=Namespace('http://www.w3.org/2008/05/skos-xl#'),
+    vcard=Namespace('http://www.w3.org/2006/vcard/ns#'),
+ 
+    # UE Namespaces
+    org=Namespace('http://www.w3.org/ns/org#'),
+    locn=Namespace('http://www.w3.org/ns/locn#'),
+    legal=Namespace('http://www.w3.org/ns/legal#'),
+    person=Namespace('http://www.w3.org/ns/person#'),
+)
 
 
-FEED_NAMES = ['organization', 'contact', 'exchange']
+FEED_MODELS = ['organization', 'contact', 'exchange']
 # Later ....
-# FEED_NAMES = ['organization', 'person', 'role', 'product', 'engagement',
+# FEED_MODELS=['organization', 'person', 'role', 'product', 'engagement',
 #               'relation', 'exchange', 'contact', 'article']
