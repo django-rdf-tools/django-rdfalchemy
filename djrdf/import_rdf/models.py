@@ -82,10 +82,10 @@ class EntrySite(models.Model):
             sesame = Repository(repository, context=ctx)
         unknownTypes = []
         mapDjrdfTypes = djrdf.tools.rdfDjrdfMapTypes()
-        subjects = graph.subjects(settings.RDF.type, rdfType)
+        subjects = graph.subjects(settings.NS.rdf.type, rdfType)
         for subject in subjects:
             print "Add %s in %s" % (subject, repository) 
-            types = graph.objects(subject, settings.RDF.type)
+            types = graph.objects(subject, settings.NS.rdf.type)
             # look for and djRdf.models corresponding to that type
             djRdfModel = None
             for t in types:

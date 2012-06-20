@@ -9,7 +9,7 @@ PUSH_HUB = 'https://quinode.superfeedr.com/'
 from rdflib import Namespace
 COMMON_DOMAINS = [
     'http://data.economie-solidaire.fr', 
-    'http://rdf.insee.fr/geo/2011/'
+    'http://rdf.insee.fr/geo/'
     ]
 
 

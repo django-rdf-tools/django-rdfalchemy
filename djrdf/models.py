@@ -57,8 +57,8 @@ class FlyAttr(models.Model):
 
 # A class where every common methods are stored
 class myRdfSubject(rdfSubject):
-    dct_created = rdfSingle(settings.DCT.created)
-    dct_modified = rdfSingle(settings.DCT.modified)
+    dct_created = rdfSingle(settings.NS.dct.created)
+    dct_modified = rdfSingle(settings.NS.dct.modified)
 
     # The _remove method deletes all the triples which
     # have  self.resUri as subject of the triple
@@ -155,7 +155,7 @@ class djRdf(models.Model):
         if self.uri != '':
             # It is important, if the resource is created in django ORM
             # first and if the uri does not exists before
-            self.db.add((self, settings.RDF.type, self.rdf_type))
+            self.db.add((self, settings.NS.rdf.type, self.rdf_type))
         # Call the "real" save() method.
         super(djRdf, self).save(*args, **kwargs)
         ping_hub('http://%s/%s/%s' % (Site.objects.get_current(), 'feed', self.__class__.__name__.lower()))
@@ -212,11 +212,11 @@ class djRdf(models.Model):
                         # property. Let's do the simplest thing we could do
                         for o in olist:
                             self.db.add((self.resUri, p, o))
-                    types = gr.objects(p, settings.RDF.type)
-                    ranges = list(gr.objects(p, settings.RDFS.range))
-                    if settings.OWL.FunctionalProperty in types or settings.OWL.InverseFunctionalProperty in types:
+                    types = gr.objects(p, settings.NS.rdf.type)
+                    ranges = list(gr.objects(p, settings.NS.rdfs.range))
+                    if settings.NS.owl.FunctionalProperty in types or settings.NS.owl.InverseFunctionalProperty in types:
                         # look for possible range_type
-                        if len(ranges) == 1  and not (settings.RDFS.Literal in ranges):
+                        if len(ranges) == 1  and not (settings.NS.rdfs.Literal in ranges):
                             descriptor = rdfSingle(p, range_type=ranges[0])
                         else:
                             descriptor = rdfSingle(p)
@@ -227,7 +227,7 @@ class djRdf(models.Model):
                         setattr(self, attr, olist[0])
                     else:
                         # look for possible range_type
-                        if len(ranges) == 1  and not (settings.RDFS.Literal in ranges): 
+                        if len(ranges) == 1  and not (settings.NS.rdfs.Literal in ranges): 
                             descriptor = rdfMultiple(p, range_type=ranges[0])
                         else:
                             descriptor = rdfMultiple(p)
