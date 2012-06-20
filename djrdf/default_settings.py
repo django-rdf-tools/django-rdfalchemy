@@ -4,7 +4,7 @@ class AttributeDict(dict):
     __getattr__ = dict.__getitem__
     __setattr__ = dict.__setitem__
 
-PUSH_HUB = 'https://quinode.superfeedr.com/'
+PUSH_HUB = 'http://quinode.superfeedr.com'
 
 from rdflib import Namespace
 COMMON_DOMAINS = [

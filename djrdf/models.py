@@ -6,7 +6,6 @@ from rdfalchemy import rdfSubject, rdfSingle, rdfMultiple
 from rdfalchemy.descriptors import rdfAbstract
 import rdflib
 from django.conf import settings
-# from settings import RDFS, RDF, OWL
 from tools import prefixNameForPred
 from django_extensions.db import fields as exfields
 import pickle
