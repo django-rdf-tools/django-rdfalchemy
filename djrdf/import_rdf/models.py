@@ -84,62 +84,68 @@ class EntrySite(models.Model):
         mapDjrdfTypes = djrdf.tools.rdfDjrdfMapTypes()
         subjects = graph.subjects(settings.NS.rdf.type, rdfType)
         for subject in subjects:
-            print "Add %s in %s" % (subject, repository) 
-            types = graph.objects(subject, settings.NS.rdf.type)
-            # look for and djRdf.models corresponding to that type
-            djRdfModel = None
-            for t in types:
-                if t in mapDjrdfTypes:
-                    djRdfModel = mapDjrdfTypes[t]
-                    break
-                else:
-                    if not(t in unknownTypes):
-                        unknownTypes.append(t)
-            # Get the Django Model object
-            addtriples = []
-            triples = graph.triples((subject, None, None))
-            try:
-                while True: 
-                    (s, p, o) = triples.next()
-                    # Skip triples belong to foreign "context", which correspond to
-                    # "imported" triples in this application
-                    pNs = djrdf.tools.splitUri(p)[0]
-                    # local property case
-                    if pNs.startswith(self.home):
-                        addtriples.append((s, p, o))
+            stored_date = list(sesame.objects(subject, settings.NS.dct.modified))
+            update_date = list(graph.objects(subject, settings.NS.dct.modified))
+            if len(update_date) == 1 and len(stored_date) == 1 and update_date[0].toPython() <= stored_date[0].toPython():
+                print "Nothing to update for %s" % subject
+            else:
+                print "Add %s in %s" % (subject, repository) 
+                types = graph.objects(subject, settings.NS.rdf.type)
+                # look for and djRdf.models corresponding to that type
+                djRdfModel = None
+                for t in types:
+                    if t in mapDjrdfTypes:
+                        djRdfModel = mapDjrdfTypes[t]
+                        break
                     else:
-                        sNs = djrdf.tools.splitUri(s)[0]
-                        if sNs.startswith(self.home):
+                        if not(t in unknownTypes):
+                            unknownTypes.append(t)
+                # Get the Django Model object
+                addtriples = []
+                triples = graph.triples((subject, None, None))
+                try:
+                    while True: 
+                        (s, p, o) = triples.next()
+                        # Skip triples belong to foreign "context", which correspond to
+                        # "imported" triples in this application
+                        pNs = djrdf.tools.splitUri(p)[0]
+                        # local property case
+                        if pNs.startswith(self.home):
                             addtriples.append((s, p, o))
-                        # or sNs.startswith(COMMON_DOMAINS)
-                        elif settings.COMMON_DOMAINS != []:
-                            i = 0
-                            sw = sNs.startswith(settings.COMMON_DOMAINS[i])
-                            while (not sw) and (i < len(settings.COMMON_DOMAINS) - 1):
-                                i = i + 1
+                        else:
+                            sNs = djrdf.tools.splitUri(s)[0]
+                            if sNs.startswith(self.home):
+                                addtriples.append((s, p, o))
+                            # or sNs.startswith(COMMON_DOMAINS)
+                            elif settings.COMMON_DOMAINS != []:
+                                i = 0
                                 sw = sNs.startswith(settings.COMMON_DOMAINS[i])
-                            if sw:
-                                addtriples.append((s, p, o))
-                        elif isinstance(o, URIRef):
-                            oNs = djrdf.tools.splitUri(o)[0]
-                            if oNs.startswith(self.home):
-                                addtriples.append((s, p, o))
+                                while (not sw) and (i < len(settings.COMMON_DOMAINS) - 1):
+                                    i = i + 1
+                                    sw = sNs.startswith(settings.COMMON_DOMAINS[i])
+                                if sw:
+                                    addtriples.append((s, p, o))
+                            elif isinstance(o, URIRef):
+                                oNs = djrdf.tools.splitUri(o)[0]
+                                if oNs.startswith(self.home):
+                                    addtriples.append((s, p, o))
+                                else:
+                                    self.addLog("The triple (%s,%s,%s) CANNOT be added" % (s, p, o))
                             else:
                                 self.addLog("The triple (%s,%s,%s) CANNOT be added" % (s, p, o))
-                        else:
-                            self.addLog("The triple (%s,%s,%s) CANNOT be added" % (s, p, o))
-            except StopIteration:
-                pass
+                except StopIteration:
+                    pass
 
-            if djRdfModel and addtriples != []:
-                djSubject, created = djRdfModel.objects.get_or_create(uri=subject)
-                djSubject.addTriples(addtriples)
-                djSubject.save()
-            # There is no djrdf model for the rdf:type of the subject
-            # the selected type are still add
-            else:
-                for t in addtriples:
-                    sesame.add(t)
+                if djRdfModel and addtriples != []:
+                    djSubject, created = djRdfModel.objects.get_or_create(uri=subject)
+                    djSubject.addTriples(addtriples)
+                    djSubject.save()
+                # There is no djrdf model for the rdf:type of the subject
+                # the selected type are still add
+                else:
+                    print "When no djRdfModel exists"
+                    for t in addtriples:
+                        sesame.add(t)
         for t in unknownTypes:
             self.addLog("The rdf:type %s is not handled yet by the aggregator" % t)
         # for the logs    
@@ -164,6 +170,14 @@ class EntrySite(models.Model):
             hub = settings.SUPERFEEDR_HUB
             print "Subscribe to topic %s on HUB  %s" % (feed_url, hub)
             Subscription.objects.subscribe(feed_url, hub=hub)
+
+
+    def unsubscribFeeds(self):
+        for f in settings.FEED_MODELS:
+            feed_url = self.feed + f + '/'
+            hub = settings.SUPERFEEDR_HUB
+            print "Subscribe to topic %s on HUB  %s" % (feed_url, hub)
+            Subscription.objects.unsubscribe(feed_url, hub=hub)
 
 
 

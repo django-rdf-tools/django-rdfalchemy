@@ -157,7 +157,7 @@ class djRdf(models.Model):
             self.db.add((self, settings.NS.rdf.type, self.rdf_type))
         # Call the "real" save() method.
         super(djRdf, self).save(*args, **kwargs)
-        ping_hub('http://%s/%s/%s' % (Site.objects.get_current(), 'feed', self.__class__.__name__.lower()))
+        ping_hub('http://%s/%s/%s/' % (Site.objects.get_current(), 'feed', self.__class__.__name__.lower()))
 
     # This method is used to build and set the attributs according to the
     # triples list in parameters.
@@ -173,6 +173,10 @@ class djRdf(models.Model):
                 pred[p] = [o]
         attrlist = self.__class__.__dict__
         for (p, olist) in pred.iteritems():
+            # first suppress the old value
+            oldvalue = self.db.triples((self, p, None))
+            for tr in oldvalue:
+                self.db.remove(tr)
             # look for an attribute corresponding to this predicate
             attr = None
             for (aname, adef) in attrlist.iteritems():
@@ -234,21 +238,12 @@ class djRdf(models.Model):
                         FlyAttr.objects.get_or_create(modelName=self.__class__.__name__,
                                     key=attr,
                                     value=pickle.dumps(descriptor))
-                        # attention aux triplets qu sont deja dans le store
-                        # il faut les supprimer
-                        oldvalue = self.db.triples((self, p, None))
-                        for tr in oldvalue:
-                            self.db.remove(tr)
                         setattr(self, attr, olist) 
             else:
                 # attr contains the name of the attribute.... just set the new values
                 if isinstance(getattr(self.__class__, attr), rdfSingle):
                     setattr(self, attr, olist[0])
                 else:
-                    # attention ici on ne supprime pas les vieux
-                    oldvalue = self.db.triples((self, p, None))
-                    for tr in oldvalue:
-                        self.db.remove(tr)
                     setattr(self, attr, olist)
 
     def toJson(self):
