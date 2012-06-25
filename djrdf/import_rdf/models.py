@@ -140,10 +140,12 @@ class EntrySite(models.Model):
                     djSubject, created = djRdfModel.objects.get_or_create(uri=subject)
                     djSubject.addTriples(addtriples)
                     djSubject.save()
+                elif addtriples == []:
+                    print "No triple could be imported for %s" % subject
                 # There is no djrdf model for the rdf:type of the subject
                 # the selected type are still add
                 else:
-                    print "When no djRdfModel exists"
+                    print "When no djRdfModel exists for %s" % subject
                     for t in addtriples:
                         sesame.add(t)
         for t in unknownTypes:
