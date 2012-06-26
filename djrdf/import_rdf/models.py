@@ -71,7 +71,7 @@ class EntrySite(models.Model):
     # from the graph (the first time, and for dumps the graph is self.parql())
     # The method to imported triples is described with mode details in doc
     # We process from the subjectrfd
-    def toSesameRep(self, repository, graph, ctx='default', rdfType=None):
+    def toSesameRep(self, repository, graph, ctx='default', rdfType=None, force=False):
         # lets use the context posibility, should be useless
         if ctx == None:
             sesame = Repository(repository)
@@ -86,7 +86,7 @@ class EntrySite(models.Model):
         for subject in subjects:
             stored_date = list(sesame.objects(subject, settings.NS.dct.modified))
             update_date = list(graph.objects(subject, settings.NS.dct.modified))
-            if len(update_date) == 1 and len(stored_date) == 1 and update_date[0].toPython() <= stored_date[0].toPython():
+            if (not force) and len(update_date) == 1 and len(stored_date) == 1 and update_date[0].toPython() <= stored_date[0].toPython():
                 print "Nothing to update for %s" % subject
             else:
                 print "Add %s in %s" % (subject, repository) 
@@ -164,7 +164,7 @@ class EntrySite(models.Model):
                 os.close(fd)
                 g = Graph()
                 g.parse(fname, format="json-ld")
-                self.toSesameRep(repository, g, ctx)
+                self.toSesameRep(repository, g, ctx, None)
 
     def subscribFeeds(self):
         for f in settings.FEED_MODELS:
