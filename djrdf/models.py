@@ -9,8 +9,6 @@ from django.conf import settings
 from tools import prefixNameForPred
 from django_extensions.db import fields as exfields
 import pickle
-from django.contrib.sites.models import Site
-from django_push.publisher import ping_hub
 
 
 # Serializer
@@ -69,13 +67,13 @@ class myRdfSubject(rdfSubject):
         self._remove(self.db, cascade='all', objectCascade=True)
 
 
+
 # The "joint" class. This class is only used in a multiple heritage context :
 # - One class derived from rdfSubject (over classes by sesame.myRdfSubject class) 
 # - and the djRdf class which subclasses the Django Model class
 #
 # Warning : deleting a rdfSubject using myRdfSubject.remove() 
 # will also call the delete() method of the django Model class
-
 class djRdf(models.Model):
     # TODO : ces deux champs doivent disparaitre.... cela casse la logique
     # rdf. Ils ne sont la  que pour nourrir les feeds. Charcher comment remplir 
@@ -157,7 +155,6 @@ class djRdf(models.Model):
             self.db.add((self, settings.NS.rdf.type, self.rdf_type))
         # Call the "real" save() method.
         super(djRdf, self).save(*args, **kwargs)
-        ping_hub('http://%s/%s/%s/' % (Site.objects.get_current(), 'feed', self.__class__.__name__.lower()))
 
     # This method is used to build and set the attributs according to the
     # triples list in parameters.

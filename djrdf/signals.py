@@ -18,13 +18,10 @@ q = django_rq.get_queue('high')
 # Listener tool
 @receiver(post_save)
 def post_save_callback(sender, instance, **kwargs):
+    print "Post save callback with sender %s and instance %s" % (sender, instance)
     if djRdf in sender.__mro__:
-        # to be able to work offline
-        try:
-            feed_url = 'http://%s/%s/%s/' % (Site.objects.get_current(), 'feed', sender.__name__.lower())
-            print "ping hub for %s " % feed_url
-            # ping_hub(feed_url)
-            q.enqueue(ping_hub, feed_url)
-        except:
-            pass
+        feed_url = 'http://%s/%s/%s/' % (Site.objects.get_current(), 'feed', sender.__name__.lower())
+        print "DO NO ping hub for %s " % feed_url
+        # ping_hub(feed_url)
+        # q.enqueue(ping_hub, feed_url)
 

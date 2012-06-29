@@ -3,8 +3,7 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
-from djpubsubhubbub.models import Subscription
-# from django_push.subscriber.models import Subscription
+from django_push.subscriber.models import Subscription
 from djrdf.repository import Repository
 from rdflib import Graph, plugin, store, URIRef
 import djrdf.tools
@@ -19,6 +18,7 @@ plugin.register(
         'rdflib_sparqlstore.SPARQLStore', 'SPARQLStore')
 plugin.register('json-ld', plugin.Parser,
         'rdflib_jsonld.jsonld_parser', 'JsonLDParser')
+
 
 
 class SparqlQuery(models.Model):
@@ -40,6 +40,7 @@ class EntrySite(models.Model):
     home = models.CharField(_(u'home'), max_length=250)
     sparqlEndPoint = models.CharField(_(u'sparql endPoint URI'), max_length=250)
     feed = models.CharField(_(u'feed'), max_length=250)
+    hub = models.CharField(_(u'hub'), max_length=250, blank=True)
     logs = models.TextField(_(u'logs'), null=True, blank=True)
     # Je ne suis pas sur que ca soit important
     # queries = models.ManyToManyField(SparqlQuery, verbose_name=_(u'queries'), related_name='queries')
@@ -57,14 +58,12 @@ class EntrySite(models.Model):
         graph.store.baseURI = str(self.sparqlEndPoint)
         return graph
 
-    def _defaultCtxName(self):
+    @property
+    def defaultCtxName(self):
         return self.home
-
-    defaultCtxName = property(_defaultCtxName)
 
     def addLog(self, log):
         self.logs = "%s : %s \n%s" % (datetime.datetime.now(), log, self.logs)
-  
 
 
     # Using a 'construct query' this method imports triples
@@ -168,19 +167,14 @@ class EntrySite(models.Model):
 
     def subscribFeeds(self):
         for f in settings.FEED_MODELS:
-            feed_url = self.feed + f + '/'
-            hub = settings.SUPERFEEDR_HUB
-            print "Subscribe to topic %s on HUB  %s" % (feed_url, hub)
-            Subscription.objects.subscribe(feed_url, hub=hub)
+            feed_url = "%s%s/" % (self.feed, f)
+            Subscription.objects.subscribe(feed_url, hub=self.hub)
 
 
     def unsubscribFeeds(self):
         for f in settings.FEED_MODELS:
-            feed_url = self.feed + f + '/'
-            hub = settings.SUPERFEEDR_HUB
-            print "Subscribe to topic %s on HUB  %s" % (feed_url, hub)
-            Subscription.objects.unsubscribe(feed_url, hub=hub)
-
+            feed_url = "%s%s/" % (self.feed, f)
+            Subscription.objects.unsubscribe(feed_url, hub=self.hub)
 
 
 
