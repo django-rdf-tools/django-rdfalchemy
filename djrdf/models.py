@@ -9,6 +9,7 @@ from django.conf import settings
 from tools import prefixNameForPred
 from django_extensions.db import fields as exfields
 import pickle
+from urlparse import urlsplit
 
 
 # Serializer
@@ -81,6 +82,13 @@ class djRdf(models.Model):
     created = exfields.CreationDateTimeField(_(u'created'), null=True)
     modified = exfields.ModificationDateTimeField(_(u'modified'), null=True)
     uri = models.CharField(max_length=250)
+
+    @property
+    def uuid(self):
+        scheme, host, path, query, fragment = urlsplit(self.uri)
+        sp = path.split('/')
+        return sp[len(sp) - 2]
+
 
     class Meta:
         abstract = True
