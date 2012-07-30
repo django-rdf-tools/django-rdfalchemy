@@ -17,40 +17,32 @@ rdflib.plugin.register('json-ld', rdflib.plugin.Serializer,
         'rdflib_jsonld.jsonld_serializer', 'JsonLDSerializer')
 
 
+# The idea is not good... This cause many problems with form
 # Introspection let us add attributes fields on the fly
 # This class aims to store the resulting attributes
-class FlyAttr(models.Model):
-    modelName = models.CharField(max_length=100)
-    key = models.CharField(max_length=50)
-    value = models.TextField()
+# class FlyAttr(models.Model):
+#     modelName = models.CharField(max_length=100)
+#     key = models.CharField(max_length=50)
+#     value = models.TextField()
 
-    def __repr__(self):
-        """ To be compliante with the rdfSubject representation """
-        return "%s('%s')" % (self.modelName, self.key)
+#     def __repr__(self):
+#         """ To be compliante with the rdfSubject representation """
+#         return "%s('%s')" % (self.modelName, self.key)
 
-    def __str__(self):
-        return self.__repr__()
+#     def __str__(self):
+#         return self.__repr__()
 
-    @staticmethod
-    def reload():
-        # print "ENTER load FLY ATTR"
-        mm = models.get_models()
-        mname = {}
-        for m in mm:
-            mname[m.__name__] = m
-        for fattr in FlyAttr.objects.all():
-            setattr(mname[fattr.modelName], fattr.key, pickle.loads(str(fattr.value)))
+#     @staticmethod
+#     def reload():
+#         # print "ENTER load FLY ATTR"
+#         mm = models.get_models()
+#         mname = {}
+#         for m in mm:
+#             mname[m.__name__] = m
+#         for fattr in FlyAttr.objects.all():
+#             setattr(mname[fattr.modelName], fattr.key, pickle.loads(str(fattr.value)))
 
 
-# Mechanism to mix django model objects and RDF data with the help of RDFAlchemy
-# Composite classes inherit from djRdf and myRdfSubject (or rdfalchemy.rdfSubject) classes
-# in this *exact* order, example:
-# 
-# class Organization(djRdf, myRdfSubject):
-#    # rdf attributes
-#    ...
-#    # django.model attributes
-#    ....
 
 
 # A class where every common methods are stored
@@ -170,6 +162,7 @@ class djRdf(models.Model):
     # its class has been set
     def addTriples(self, triples):
         # store  the triples according to the pred
+        log = ''
         pred = {}
         for (s, p, o) in triples:
             if p in pred:
@@ -181,7 +174,10 @@ class djRdf(models.Model):
             # first suppress the old value
             oldvalue = self.db.triples((self, p, None))
             for tr in oldvalue:
-                self.db.remove(tr)
+                try:
+                    self.db.remove(tr)
+                except Exception:
+                    log = log + u'Can NOT to remove triples %s %s %s \n' % tr
             # look for an attribute corresponding to this predicate
             attr = None
             for (aname, adef) in attrlist.iteritems():
@@ -193,57 +189,59 @@ class djRdf(models.Model):
             # This attribute does not exist yet. Just create id and set its value
             if (attr == None):
                 # version simplifiée
-                # for o in olist:
-                #     self.db.add((self.resUri, p, o))
+                for o in olist:
+                    self.db.add((self.resUri, p, o))
+                    log = log + u'Attr %s does not exist for %s\n' % (p, self)
 
-                # Introspection version: attributes create on the fly
-                # The attribute name is made from the predicate uri...
-                # Hope it could be safe.
-                attr = prefixNameForPred(p)
-                # special case for rdf_type because of ....
-                # triples are simply added
-                if attr == 'rdf_type':
-                    for o in olist:
-                        self.db.add((self.resUri, p, o))
-                else:
-                    if attr in attrlist:
-                        # choose another name
-                        raise Exception("NYI chose an other name for %s" % attr)
-                    # the cardinality defined if we use a rdfSingle or rdfMultiple
-                    # Thus we need to parse the graph corresponding to the URI of the property
-                    # TODO : something more complex to deal with owl:cardinality
-                    gr = rdflib.Graph()
-                    try:
-                        gr.parse(p)
-                    except:
-                        # It is impossible to access the the graph of the
-                        # property. Let's do the simplest thing we could do
-                        for o in olist:
-                            self.db.add((self.resUri, p, o))
-                    types = gr.objects(p, settings.NS.rdf.type)
-                    ranges = list(gr.objects(p, settings.NS.rdfs.range))
-                    if settings.NS.owl.FunctionalProperty in types or settings.NS.owl.InverseFunctionalProperty in types:
-                        # look for possible range_type
-                        if len(ranges) == 1  and not (settings.NS.rdfs.Literal in ranges):
-                            descriptor = rdfSingle(p, range_type=ranges[0])
-                        else:
-                            descriptor = rdfSingle(p)
-                        setattr(self.__class__, attr, descriptor)
-                        FlyAttr.objects.get_or_create(modelName=self.__class__.__name__,
-                                    key=attr,
-                                    value=pickle.dumps(descriptor))
-                        setattr(self, attr, olist[0])
-                    else:
-                        # look for possible range_type
-                        if len(ranges) == 1  and not (settings.NS.rdfs.Literal in ranges): 
-                            descriptor = rdfMultiple(p, range_type=ranges[0])
-                        else:
-                            descriptor = rdfMultiple(p)
-                        setattr(self.__class__, attr, descriptor)
-                        FlyAttr.objects.get_or_create(modelName=self.__class__.__name__,
-                                    key=attr,
-                                    value=pickle.dumps(descriptor))
-                        setattr(self, attr, olist) 
+                # DOES NOT WORK with the abstract models
+                # # Introspection version: attributes create on the fly
+                # # The attribute name is made from the predicate uri...
+                # # Hope it could be safe.
+                # attr = prefixNameForPred(p)
+                # # special case for rdf_type because of ....
+                # # triples are simply added
+                # if attr == 'rdf_type':
+                #     for o in olist:
+                #         self.db.add((self.resUri, p, o))
+                # else:
+                #     if attr in attrlist:
+                #         # choose another name
+                #         raise Exception("NYI chose an other name for %s" % attr)
+                #     # the cardinality defined if we use a rdfSingle or rdfMultiple
+                #     # Thus we need to parse the graph corresponding to the URI of the property
+                #     # TODO : something more complex to deal with owl:cardinality
+                #     gr = rdflib.Graph()
+                #     try:
+                #         gr.parse(p)
+                #     except:
+                #         # It is impossible to access the the graph of the
+                #         # property. Let's do the simplest thing we could do
+                #         for o in olist:
+                #             self.db.add((self.resUri, p, o))
+                #     types = gr.objects(p, settings.NS.rdf.type)
+                #     ranges = list(gr.objects(p, settings.NS.rdfs.range))
+                #     if settings.NS.owl.FunctionalProperty in types or settings.NS.owl.InverseFunctionalProperty in types:
+                #         # look for possible range_type
+                #         if len(ranges) == 1  and not (settings.NS.rdfs.Literal in ranges):
+                #             descriptor = rdfSingle(p, range_type=ranges[0])
+                #         else:
+                #             descriptor = rdfSingle(p)
+                #         setattr(self.__class__, attr, descriptor)
+                #         FlyAttr.objects.get_or_create(modelName=self.__class__.__name__,
+                #                     key=attr,
+                #                     value=pickle.dumps(descriptor))
+                #         setattr(self, attr, olist[0])
+                #     else:
+                #         # look for possible range_type
+                #         if len(ranges) == 1  and not (settings.NS.rdfs.Literal in ranges): 
+                #             descriptor = rdfMultiple(p, range_type=ranges[0])
+                #         else:
+                #             descriptor = rdfMultiple(p)
+                #         setattr(self.__class__, attr, descriptor)
+                #         FlyAttr.objects.get_or_create(modelName=self.__class__.__name__,
+                #                     key=attr,
+                #                     value=pickle.dumps(descriptor))
+                #         setattr(self, attr, olist) 
             else:
                 # attr contains the name of the attribute.... just set the new values
                 if isinstance(getattr(self.__class__, attr), rdfSingle):

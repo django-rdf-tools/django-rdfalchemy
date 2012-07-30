@@ -5,7 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from django_push.subscriber.models import Subscription
 from djrdf.repository import Repository
-from rdflib import Graph, plugin, store, URIRef
+from rdflib import ConjunctiveGraph, plugin, store, URIRef
 import djrdf.tools
 import tempfile
 import os
@@ -13,9 +13,9 @@ import feedparser
 import datetime
 
 
-plugin.register(
-        'SPARQLStore', store.Store,
-        'rdflib_sparqlstore.SPARQLStore', 'SPARQLStore')
+# plugin.register(
+#         'SPARQLStore', store.Store,
+#         'rdflib_sparqlstore.SPARQLStore', 'SPARQLStore')
 plugin.register('json-ld', plugin.Parser,
         'rdflib_jsonld.jsonld_parser', 'JsonLDParser')
 
@@ -53,7 +53,7 @@ class EntrySite(models.Model):
         return self.label
 
     def sparql(self):
-        graph = Graph(store="SPARQLStore")
+        graph = ConjunctiveGraph('SPARQLStore')
         graph.open(self.sparqlEndPoint, False)
         graph.store.baseURI = str(self.sparqlEndPoint)
         return graph
@@ -137,7 +137,8 @@ class EntrySite(models.Model):
 
                 if djRdfModel and addtriples != []:
                     djSubject, created = djRdfModel.objects.get_or_create(uri=subject)
-                    djSubject.addTriples(addtriples)
+                    log = djSubject.addTriples(addtriples)
+                    self.addLog(log)
                     djSubject.save()
                 elif addtriples == []:
                     print "No triple could be imported for %s" % subject
