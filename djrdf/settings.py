@@ -24,15 +24,3 @@ DJRDF_NS = AttributeDict(
 )
 
 
-FEED_MODELS = ['organization', 'contact', 'exchange']
-# Later ....
-# FEED_MODELS=['organization', 'person', 'role', 'product', 'engagement',
-#               'relation', 'exchange', 'contact', 'article']
-
-
-# Using subhub, the hud max lease time for a subscription is 1 year. So we cannot
-# avoid handling the lease time.
-PUSH_LEASE_SECONDS = 365 * 86400
-# Django-push. This variable is not set here because it needs to import Site
-# The hud is set in the Feed class
-PUSH_HUB = ''
