@@ -5,7 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from django_push.subscriber.models import Subscription
 from djrdf.repository import Repository
-from rdflib import ConjunctiveGraph, plugin, store, URIRef
+from rdflib import ConjunctiveGraph, plugin, store, URIRef, Graph
 import djrdf.tools
 import tempfile
 import os

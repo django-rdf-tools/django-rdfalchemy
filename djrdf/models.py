@@ -2,14 +2,13 @@
 from django.utils.translation import ugettext_lazy as _
 from django.db import models
 # from django.db.models import CharField
-from rdfalchemy import rdfSubject, rdfSingle, rdfMultiple
+from rdfalchemy import rdfSubject, rdfSingle
 from rdfalchemy.descriptors import rdfAbstract
 import rdflib
 from django.conf import settings
-from tools import prefixNameForPred
 from django_extensions.db import fields as exfields
-import pickle
 from urlparse import urlsplit
+from import_rdf.models import EntrySite
 
 
 # Serializer
@@ -58,6 +57,19 @@ class myRdfSubject(rdfSubject):
         except Exception:
             pass
         self._remove(self.db, cascade='all', objectCascade=True)
+
+    @classmethod
+    def importFromEntries(cls):
+        """ Import all resources with rdf_type cls.rdf_type from all sites
+            This method would be used only to rebuild the rdf store
+        """
+        for es in EntrySite.objects.all():
+            print """
+            Importation of rdf data from %s
+            """ % es.label
+            # Contexts seem to be useless
+            es.toSesameRep(settings.SESAME_REPOSITORY_NAME, es.sparql(), None, cls.rdf_type, force=True)
+
 
 
 
