@@ -72,10 +72,10 @@ class EntrySite(models.Model):
     # We process from the subjectrfd
     def toSesameRep(self, repository, graph, ctx='default', rdfType=None, force=False):
         # lets use the context posibility, should be useless
-        if ctx == None:
+        if ctx == None and not getattr(settings, 'PES_USE_CONTEXT', False):
             sesame = Repository(repository)
         else:
-            if ctx == 'default':
+            if ctx == 'default' or getattr(settings, 'PES_USE_CONTEXT', False):
                 ctx = self.defaultCtxName
             ctx = "<%s>" % ctx
             sesame = Repository(repository, context=ctx)
@@ -136,8 +136,10 @@ class EntrySite(models.Model):
                     pass
 
                 if djRdfModel and addtriples != []:
+                    import pdb
+                    pdb.set_trace()
                     djSubject, created = djRdfModel.objects.get_or_create(uri=subject)
-                    log = djSubject.addTriples(addtriples)
+                    log = djSubject.addTriples(addtriples, sesame)
                     self.addLog(log)
                     djSubject.save()
                 elif addtriples == []:
@@ -154,7 +156,7 @@ class EntrySite(models.Model):
         self.save()
 
     def updateFromFeeds(self, repository, ctx='default'):
-        for f in settings.FEED_MODELS:
+        for f in getattr(settings, 'FEED_MODELS', []):
             feed_url = self.feed + f + '/'
             parsedFeed = feedparser.parse(feed_url)
             print "Parse feed %s" % feed_url
@@ -167,13 +169,13 @@ class EntrySite(models.Model):
                 self.toSesameRep(repository, g, ctx, None)
 
     def subscribFeeds(self):
-        for f in settings.FEED_MODELS:
+        for f in getattr(settings, 'FEED_MODELS', []):
             feed_url = "%s%s/" % (self.feed, f)
             Subscription.objects.subscribe(feed_url, hub=self.hub)
 
 
     def unsubscribFeeds(self):
-        for f in settings.FEED_MODELS:
+        for f in getattr(settings, 'FEED_MODELS', []):
             feed_url = "%s%s/" % (self.feed, f)
             Subscription.objects.unsubscribe(feed_url, hub=self.hub)
 

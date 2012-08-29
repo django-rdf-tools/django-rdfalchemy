@@ -161,10 +161,10 @@ class djRdf(models.Model):
     def save(self, *args, **kwargs):
         self.resUri = rdflib.term.URIRef(self.uri)
         # USELESS?????
-        if self.uri != '':
-            # It is important, if the resource is created in django ORM
-            # first and if the uri does not exists before
-            self.db.add((self, settings.NS.rdf.type, self.rdf_type))
+        # if self.uri != '':
+        #     # It is important, if the resource is created in django ORM
+        #     # first and if the uri does not exists before
+        #     self.db.add((self, settings.NS.rdf.type, self.rdf_type))
         # Call the "real" save() method.
         super(djRdf, self).save(*args, **kwargs)
 
@@ -172,7 +172,7 @@ class djRdf(models.Model):
     # triples list in parameters.
     # If this method is called, this means that from de subject of the triples
     # its class has been set
-    def addTriples(self, triples):
+    def addTriples(self, triples, db):
         # store  the triples according to the pred
         log = ''
         pred = {}
@@ -184,10 +184,10 @@ class djRdf(models.Model):
         attrlist = self.__class__.__dict__
         for (p, olist) in pred.iteritems():
             # first suppress the old value
-            oldvalue = self.db.triples((self, p, None))
+            oldvalue = db.triples((self, p, None))
             for tr in oldvalue:
                 try:
-                    self.db.remove(tr)
+                    db.remove(tr)
                 except Exception:
                     log = log + u'Can NOT to remove triples %s %s %s \n' % tr
             # look for an attribute corresponding to this predicate
@@ -202,7 +202,7 @@ class djRdf(models.Model):
             if (attr == None):
                 # version simplifiée
                 for o in olist:
-                    self.db.add((self.resUri, p, o))
+                    db.add((self.resUri, p, o))
                     log = log + u'Attr %s does not exist for %s\n' % (p, self)
 
                 # DOES NOT WORK with the abstract models
@@ -214,7 +214,7 @@ class djRdf(models.Model):
                 # # triples are simply added
                 # if attr == 'rdf_type':
                 #     for o in olist:
-                #         self.db.add((self.resUri, p, o))
+                #         db.add((self.resUri, p, o))
                 # else:
                 #     if attr in attrlist:
                 #         # choose another name
@@ -229,7 +229,7 @@ class djRdf(models.Model):
                 #         # It is impossible to access the the graph of the
                 #         # property. Let's do the simplest thing we could do
                 #         for o in olist:
-                #             self.db.add((self.resUri, p, o))
+                #             db.add((self.resUri, p, o))
                 #     types = gr.objects(p, settings.NS.rdf.type)
                 #     ranges = list(gr.objects(p, settings.NS.rdfs.range))
                 #     if settings.NS.owl.FunctionalProperty in types or settings.NS.owl.InverseFunctionalProperty in types:
