@@ -38,7 +38,7 @@ def post_save_callback(sender, instance, **kwargs):
         site = Site.objects.get_current()
         model = sender.__name__.lower()
         feed_url = 'http://%s/feed/%s/' % (site, model)
-        feed_url_obj = 'http://%s/feed/%s/%s/' % (site, model, instance.uuid)
+        feed_url_obj = '%s%s/' % (feed_url, instance.uuid)
         subhub.publish([feed_url, feed_url_obj], instance.uri, False)
     elif isinstance(instance, subhub.models.DistributionTask) and settings.SUBHUB_MAINTENANCE_AUTO:
         try:

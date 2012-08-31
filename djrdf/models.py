@@ -16,35 +16,14 @@ rdflib.plugin.register('json-ld', rdflib.plugin.Serializer,
         'rdflib_jsonld.jsonld_serializer', 'JsonLDSerializer')
 
 
-# The idea is not good... This cause many problems with form
-# Introspection let us add attributes fields on the fly
-# This class aims to store the resulting attributes
-# class FlyAttr(models.Model):
-#     modelName = models.CharField(max_length=100)
-#     key = models.CharField(max_length=50)
-#     value = models.TextField()
-
-#     def __repr__(self):
-#         """ To be compliante with the rdfSubject representation """
-#         return "%s('%s')" % (self.modelName, self.key)
-
-#     def __str__(self):
-#         return self.__repr__()
-
-#     @staticmethod
-#     def reload():
-#         # print "ENTER load FLY ATTR"
-#         mm = models.get_models()
-#         mname = {}
-#         for m in mm:
-#             mname[m.__name__] = m
-#         for fattr in FlyAttr.objects.all():
-#             setattr(mname[fattr.modelName], fattr.key, pickle.loads(str(fattr.value)))
-
-
 
 
 # A class where every common methods are stored
+# Be aware that in case od an no imported object (from an rdfStore)
+# the triple (obj, rdf:type, type) has to be store by hand
+# Example 
+# mrdf = myRdfSubject()
+# mrdf.db.add(mrdf, settings.NS.rdf.type, mrdf.rdf_type)
 class myRdfSubject(rdfSubject):
     dct_created = rdfSingle(settings.NS.dct.created)
     dct_modified = rdfSingle(settings.NS.dct.modified)
