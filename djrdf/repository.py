@@ -31,13 +31,20 @@ class Repository(SesameGraph):
             # print "N3 de objects is %s " % o.n3()
             # print "TRY NT %s" % _xmlcharref_encode(o.n3())
             # print "try encoding %s " % o.n3().encode("utf-8")
-            super(Repository, self).add((s, p, o), context)
+            if context:
+                ctx = '<%s>' % context
+            else:
+                ctx = None
+            super(Repository, self).add((s, p, o), context=ctx)
 
 
-# Set the default database for rdfSubject
-# import rdfalchemy
-# pesSesame = Repository("pesRepository")
-# rdfalchemy.rdfSubject.db = pesSesame
+    # ARghss, there is some gap in rdfalchemy code!
+    def objects(self, subject=None, predicate=None, **kwargs):
+        """A generator of objects with the given subject and predicate"""
+        for s, p, o in self.triples((subject, predicate, None), **kwargs):
+            yield o
+
+
 
 
 
