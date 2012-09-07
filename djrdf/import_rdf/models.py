@@ -49,7 +49,7 @@ class EntrySite(models.Model):
 
     def save(self, *args, **kwargs):
          # create / update URI
-        super(models.Model, self).save(*args, **kwargs)
+        super(EntrySite, self).save(*args, **kwargs)
         if self.auto_subscribe:
             self.subscribFeeds()
 
