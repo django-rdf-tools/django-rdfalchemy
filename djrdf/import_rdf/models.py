@@ -35,15 +35,24 @@ class SparqlQuery(models.Model):
 
 
 class EntrySite(models.Model):
-    label = models.CharField(_(u'Label'), max_length=300)
+    label = models.CharField(_(u'Label'), max_length=100, unique=True)
     description = models.TextField(_(u'description'), null=True, blank=True)
     home = models.CharField(_(u'home'), max_length=250)
     sparqlEndPoint = models.CharField(_(u'sparql endPoint URI'), max_length=250)
     feed = models.CharField(_(u'feed'), max_length=250)
     hub = models.CharField(_(u'hub'), max_length=250, blank=True)
+    auto_subscribe = models. BooleanField(_(u'automatic subscription'), default=True)
     logs = models.TextField(_(u'logs'), null=True, blank=True)
     # Je ne suis pas sur que ca soit important
     # queries = models.ManyToManyField(SparqlQuery, verbose_name=_(u'queries'), related_name='queries')
+
+
+    def save(self, *args, **kwargs):
+         # create / update URI
+        super(models.Model, self).save(*args, **kwargs)
+        if self.auto_subscribe:
+            self.subscribFeeds()
+
 
     class Meta:
         verbose_name = _(u'Site entries')
@@ -85,8 +94,10 @@ class EntrySite(models.Model):
         for subject in subjects:
             stored_date = list(sesame.objects(subject, settings.NS.dct.modified))
             update_date = list(graph.objects(subject, settings.NS.dct.modified))
-            if (not force) and len(update_date) == 1 and len(stored_date) == 1 and update_date[0].toPython() <= stored_date[0].toPython():
-                print "Nothing to update for %s" % subject
+            replacedBy = list(graph.objects(subject, settings.NS.dct.isReplacedBy))
+
+            if  (not force) and len(update_date) == 1 and len(stored_date) == 1 and update_date[0].toPython() <= stored_date[0].toPython():
+                print u"Nothing to update for %s" % subject
             else:
                 print "Add %s in %s" % (subject, repository) 
                 types = graph.objects(subject, settings.NS.rdf.type)
@@ -99,45 +110,69 @@ class EntrySite(models.Model):
                     else:
                         if not(t in unknownTypes):
                             unknownTypes.append(t)
-                # Get the Django Model object
+
                 addtriples = []
                 triples = graph.triples((subject, None, None))
-                try:
-                    while True: 
-                        (s, p, o) = triples.next()
-                        # Skip triples belong to foreign "context", which correspond to
-                        # "imported" triples in this application
-                        pNs = djrdf.tools.splitUri(p)[0]
-                        # local property case
-                        if pNs.startswith(self.home):
-                            addtriples.append((s, p, o))
-                        else:
-                            sNs = djrdf.tools.splitUri(s)[0]
-                            if sNs.startswith(self.home):
+
+                # If a triple <old_uri> dct.isReplacedBy <new_uri> exists, this supposed
+                # the new_uri is up_to_date and the 'domain' which was hosting old_uri
+                # aggrees this renaming of uri. The aggregator has just to registered it
+                # and to populate this modification
+                if djRdfModel and len(replacedBy) == 1:
+                    newSubject = replacedBy[0]
+                    try:
+                        while True:
+                            tr = triples.next()
+                            sesame.remove(tr)
+                    except StopIteration:
+                        pass
+                    sesame.add((subject, settings.NS.dct.isReplacedBy, newSubject))
+                    triples = graph.triples((None, None, subject))
+                    try:
+                        while True:
+                            (s, p, o) = triples.next()
+                            sesame.remove((s, p, o))
+                            sesame.add((s, p, newSubject))
+                    except StopIteration:
+                        pass
+
+                    djSubject, created = djRdfModel.objects.get_or_create(uri=subject)
+                    djSubject.save()  # To publish updates
+                else:
+                    try:
+                        while True: 
+                            (s, p, o) = triples.next()
+                            # Skip triples belong to foreign "context", which correspond to
+                            # "imported" triples in this application
+                            pNs = djrdf.tools.splitUri(p)[0]
+                            # local property case
+                            if pNs.startswith(self.home):
                                 addtriples.append((s, p, o))
-                            # or sNs.startswith(COMMON_DOMAINS)
-                            elif settings.COMMON_DOMAINS != []:
-                                i = 0
-                                sw = sNs.startswith(settings.COMMON_DOMAINS[i])
-                                while (not sw) and (i < len(settings.COMMON_DOMAINS) - 1):
-                                    i = i + 1
+                            else:
+                                sNs = djrdf.tools.splitUri(s)[0]
+                                if sNs.startswith(self.home):
+                                    addtriples.append((s, p, o))
+                                # or sNs.startswith(COMMON_DOMAINS)
+                                elif settings.COMMON_DOMAINS != []:
+                                    i = 0
                                     sw = sNs.startswith(settings.COMMON_DOMAINS[i])
-                                if sw:
-                                    addtriples.append((s, p, o))
-                            elif isinstance(o, URIRef):
-                                oNs = djrdf.tools.splitUri(o)[0]
-                                if oNs.startswith(self.home):
-                                    addtriples.append((s, p, o))
+                                    while (not sw) and (i < len(settings.COMMON_DOMAINS) - 1):
+                                        i = i + 1
+                                        sw = sNs.startswith(settings.COMMON_DOMAINS[i])
+                                    if sw:
+                                        addtriples.append((s, p, o))
+                                elif isinstance(o, URIRef):
+                                    oNs = djrdf.tools.splitUri(o)[0]
+                                    if oNs.startswith(self.home):
+                                        addtriples.append((s, p, o))
+                                    else:
+                                        self.addLog("The triple (%s,%s,%s) CANNOT be added" % (s, p, o))
                                 else:
                                     self.addLog("The triple (%s,%s,%s) CANNOT be added" % (s, p, o))
-                            else:
-                                self.addLog("The triple (%s,%s,%s) CANNOT be added" % (s, p, o))
-                except StopIteration:
-                    pass
+                    except StopIteration:
+                        pass
 
                 if djRdfModel and addtriples != []:
-                    import pdb
-                    pdb.set_trace()
                     djSubject, created = djRdfModel.objects.get_or_create(uri=subject)
                     log = djSubject.addTriples(addtriples, sesame)
                     self.addLog(log)
