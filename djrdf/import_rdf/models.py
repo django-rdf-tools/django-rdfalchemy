@@ -11,7 +11,7 @@ import tempfile
 import os
 import feedparser
 import datetime
-
+import time
 
 # plugin.register(
 #         'SPARQLStore', store.Store,
@@ -92,6 +92,8 @@ class EntrySite(models.Model):
         mapDjrdfTypes = djrdf.tools.rdfDjrdfMapTypes()
         subjects = graph.subjects(settings.NS.rdf.type, rdfType)
         for subject in subjects:
+            # small delay to let jetty warmup
+            time.sleep(0.01)
             stored_date = list(sesame.objects(subject, settings.NS.dct.modified))
             update_date = list(graph.objects(subject, settings.NS.dct.modified))
             replacedBy = list(graph.objects(subject, settings.NS.dct.isReplacedBy))

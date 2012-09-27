@@ -258,6 +258,6 @@ class djRdf(models.Model):
         return g.serialize(format='json-ld')
 
 
-from django.core.signals import  request_finished
-from djrdf.signals import post_save_callback
-request_finished.connect(post_save_callback, sender=djRdf)
+# from django.core.signals import  request_finished
+# from djrdf.signals import post_save_callback
+# request_finished.connect(post_save_callback, sender=djRdf)

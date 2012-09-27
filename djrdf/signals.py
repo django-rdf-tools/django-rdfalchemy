@@ -56,4 +56,3 @@ def post_save_callback(sender, instance, **kwargs):
                 log.warning(u"%s" % e)
     else:
         pass
-
