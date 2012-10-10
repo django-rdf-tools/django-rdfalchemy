@@ -5,13 +5,15 @@ from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from django_push.subscriber.models import Subscription
 from djrdf.repository import Repository
-from rdflib import ConjunctiveGraph, plugin, store, URIRef, Graph
+from rdflib import  plugin, URIRef, Graph
 import djrdf.tools
 import tempfile
 import os
 import feedparser
 import datetime
 import time
+from django.core.validators import URLValidator
+from django.core.exceptions import ValidationError
 
 # plugin.register(
 #         'SPARQLStore', store.Store,
@@ -38,7 +40,7 @@ class EntrySite(models.Model):
     label = models.CharField(_(u'Label'), max_length=100, unique=True)
     description = models.TextField(_(u'description'), null=True, blank=True)
     home = models.CharField(_(u'home'), max_length=250)
-    sparqlEndPoint = models.CharField(_(u'sparql endPoint URI'), max_length=250)
+    rdfEndPoint = models.CharField(_(u'rdf endPoint'), max_length=250)
     feed = models.CharField(_(u'feed'), max_length=250)
     hub = models.CharField(_(u'hub'), max_length=250, blank=True)
     auto_subscribe = models. BooleanField(_(u'automatic subscription'), default=True)
@@ -61,10 +63,19 @@ class EntrySite(models.Model):
     def __unicode__(self):
         return self.label
 
-    def sparql(self):
-        graph = ConjunctiveGraph('SPARQLStore')
-        graph.open(self.sparqlEndPoint, False)
-        graph.store.baseURI = str(self.sparqlEndPoint)
+    def graph(self):
+        graph = Graph()
+        if self.rdfEndPoint.endswith('n3'):
+            graph.parse(self.rdfEndPoint, format='n3')
+        elif self.rdfEndPoint.endswith('ttl'):
+            graph.parse(self.rdfEndPoint, format='n3')
+        elif self.rdfEndPoint.endswith('json'):
+            graph.parse(self.rdfEndPoint, format='json-ld')
+        elif self.rdfEndPoint.endswith('trix'):
+            graph.parse(self.rdfEndPoint, format='trix')
+        elif self.rdfEndPoint.endswith('xml'):
+            graph.parse(self.rdfEndPoint, format='xml')
+
         return graph
 
     @property
@@ -208,13 +219,23 @@ class EntrySite(models.Model):
     def subscribFeeds(self):
         for f in getattr(settings, 'FEED_MODELS', []):
             feed_url = "%s%s/" % (self.feed, f)
-            Subscription.objects.subscribe(feed_url, hub=self.hub)
+            validate = URLValidator(verify_exists=True)
+            try:            
+                validate(feed_url)
+                Subscription.objects.subscribe(feed_url, hub=self.hub)
+            except ValidationError:
+                pass
 
 
     def unsubscribFeeds(self):
         for f in getattr(settings, 'FEED_MODELS', []):
             feed_url = "%s%s/" % (self.feed, f)
-            Subscription.objects.unsubscribe(feed_url, hub=self.hub)
+            validate = URLValidator(verify_exists=True)
+            try:
+                validate(feed_url)
+                Subscription.objects.unsubscribe(feed_url, hub=self.hub)
+            except ValidationError:
+                pass
 
 
 
