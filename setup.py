@@ -11,6 +11,8 @@ except ImportError:
 VERSION = __import__('djrdf').__version__
 
 import os
+
+
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
@@ -19,8 +21,9 @@ setup(
     version = VERSION,
     description='Extension to mix Django ORM and RDFAlchemy models',
     packages=[ 'djrdf',
-               'djrdf.import_rdf',
-               'djrdf.import_rdf.migrations'],
+               'djrdf.import_rdf'
+               # 'djrdf.import_rdf.migrations'
+               ],
     include_package_data=True,
     author='Cooperative Quinode',
     author_email='claude.huchet@quinode.fr',
