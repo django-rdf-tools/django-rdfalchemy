@@ -266,10 +266,10 @@ class djRdf(models.Model):
         if model == None:
             for m in models.get_models():
                 if djRdf in m.__mro__:
-                    for o in m:
+                    for o in m.objects.all():
                         o.delete()
         else:
-            for o in model:
+            for o in model.objects.all():
                 o.delete()
 
 
