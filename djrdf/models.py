@@ -11,6 +11,7 @@ from urlparse import urlsplit
 from import_rdf.models import EntrySite
 
 
+
 # Serializer
 rdflib.plugin.register('json-ld', rdflib.plugin.Serializer,
         'rdflib_jsonld.jsonld_serializer', 'JsonLDSerializer')
@@ -257,7 +258,26 @@ class djRdf(models.Model):
             pass 
         return g.serialize(format='json-ld')
 
+    @staticmethod
+    def cleanAllDjRdfmodels(model=None):
+        """  Clean ALL djangoRdf models. 
+             To be used ONLY to rebuild the all rdf data
+        """
+        if model == None:
+            for m in models.get_models():
+                if djRdf in m.__mro__:
+                    for o in m:
+                        o.delete()
+        else:
+            for o in model:
+                o.delete()
+
+
+
 
 # from django.core.signals import  request_finished
 # from djrdf.signals import post_save_callback
 # request_finished.connect(post_save_callback, sender=djRdf)
+
+
+
