@@ -29,8 +29,10 @@ class myRdfSubject(rdfSubject):
     dct_created = rdfSingle(settings.NS.dct.created)
     dct_modified = rdfSingle(settings.NS.dct.modified)
 
+
     # The _remove method deletes all the triples which
     # have  self.resUri as subject of the triple
+    # _remove is a rdfSubject method
     def remove(self):
         try:
             self.delete()

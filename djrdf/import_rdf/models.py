@@ -203,6 +203,52 @@ class EntrySite(models.Model):
         # for the logs    
         self.save()
 
+
+    def removeFromSesameRep(self, repository, ctx='default', rdfType=None):
+        """
+        remove triples (s,p,o) such as 
+           - s has an uri hosted by self
+           - o has an uri hosted by self
+           - p has an uri hosted by seld
+        """
+        # lets use the context posibility, should be useless
+        if ctx == None and not getattr(settings, 'PES_USE_CONTEXT', False):
+            sesame = Repository(repository)
+        else:
+            if ctx == 'default' or getattr(settings, 'PES_USE_CONTEXT', False):
+                ctx = self.defaultCtxName
+            ctx = "<%s>" % ctx
+            sesame = Repository(repository, context=ctx)
+        subjects = sesame.subjects(settings.NS.rdf.type, rdfType)
+        for subject in subjects:
+            if str(subject).startswith(self.home):
+                triples = sesame.triples((subject, None, None))
+                for tr in triples:
+                    try:
+                        sesame.remove(tr)
+                    except:
+                        pass
+        preds = sesame.predicates(None, None)
+        for p in preds:
+            if str(p).startswith(self.home):
+                triples = sesame.triples((None, p, None))
+                for tr in triples:
+                    try:
+                        sesame.remove(tr)
+                    except:
+                        pass
+        objs = sesame.objects(None, None)
+        for o in objs:
+            if isinstance(o, URIRef) and str(o).startswith(self.home):
+                triples = sesame.triples((None, None, o))
+                for tr in triples:
+                    try:
+                        sesame.remove(tr)
+                    except:
+                        pass
+
+
+
     def updateFromFeeds(self, repository, ctx='default'):
         for f in getattr(settings, 'FEED_MODELS', []):
             feed_url = self.feed + f + '/'
