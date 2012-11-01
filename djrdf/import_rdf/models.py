@@ -63,18 +63,26 @@ class EntrySite(models.Model):
     def __unicode__(self):
         return self.label
 
-    def graph(self):
+    def graph(self, model=None):
         graph = Graph()
-        if self.rdfEndPoint.endswith('n3'):
-            graph.parse(self.rdfEndPoint, format='n3')
-        elif self.rdfEndPoint.endswith('ttl'):
-            graph.parse(self.rdfEndPoint, format='n3')
-        elif self.rdfEndPoint.endswith('json'):
-            graph.parse(self.rdfEndPoint, format='json-ld')
-        elif self.rdfEndPoint.endswith('trix'):
-            graph.parse(self.rdfEndPoint, format='trix')
-        elif self.rdfEndPoint.endswith('xml'):
-            graph.parse(self.rdfEndPoint, format='xml')
+
+        if model in settings.FEED_MODELS:
+            ep = self.rdfEndPoint
+            remainder = ep.rsplit('all', 1)
+            endPoint = model.join(remainder)
+        else:
+            endPoint = self.rdfEndPoint
+
+        if endPoint.endswith('n3'):
+            graph.parse(endPoint, format='n3')
+        elif endPoint.endswith('ttl'):
+            graph.parse(endPoint, format='n3')
+        elif endPoint.endswith('json'):
+            graph.parse(endPoint, format='json-ld')
+        elif endPoint.endswith('trix'):
+            graph.parse(endPoint, format='trix')
+        elif endPoint.endswith('xml'):
+            graph.parse(endPoint, format='xml')
 
         return graph
 
