@@ -12,6 +12,7 @@ import os
 import feedparser
 import datetime
 import time
+import djrdf
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 
@@ -254,6 +255,12 @@ class EntrySite(models.Model):
                         sesame.remove(tr)
                     except:
                         pass
+        # Suppress also instance in db
+        for m in models.get_models():
+            if djrdf.models.djRdf in m.__mro__:
+                for o in m.objects.filter(uri__contains=self.home):
+                    o.delete()
+  
 
 
 
