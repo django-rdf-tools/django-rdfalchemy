@@ -229,7 +229,7 @@ class EntrySite(models.Model):
             sesame = Repository(repository, context=ctx)
         subjects = sesame.subjects(settings.NS.rdf.type, rdfType)
         for subject in subjects:
-            if str(subject).startswith(self.home):
+            if unicode(subject).startswith(self.home):
                 triples = sesame.triples((subject, None, None))
                 for tr in triples:
                     try:
@@ -238,7 +238,7 @@ class EntrySite(models.Model):
                         pass
         preds = sesame.predicates(None, None)
         for p in preds:
-            if str(p).startswith(self.home):
+            if unicode(p).startswith(self.home):
                 triples = sesame.triples((None, p, None))
                 for tr in triples:
                     try:
