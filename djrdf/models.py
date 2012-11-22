@@ -9,6 +9,7 @@ from django.conf import settings
 from django_extensions.db import fields as exfields
 from urlparse import urlsplit
 from import_rdf.models import EntrySite
+from djrdf.tools import uri_to_json
 
 
 
@@ -244,21 +245,7 @@ class djRdf(models.Model):
                     setattr(self, attr, olist)
 
     def toJson(self):
-        triples = self.db.triples((self.resUri, None, None))
-        g = rdflib.Graph()
-        try:
-            while True:
-                g.add(triples.next())
-        except:
-            pass
-        # let's see if it is useful to put also the "ValueOf"
-        triples = self.db.triples((None, None, self.resUri))
-        try:
-            while True:
-                g.add(triples.next())
-        except:
-            pass 
-        return g.serialize(format='json-ld')
+        return uri_to_json(self.uri, self.db)
 
     @staticmethod
     def cleanAllDjRdfmodels(model=None):

@@ -4,12 +4,33 @@
 from django.conf import settings
 from django.db import models
 import djrdf
-from rdflib import Namespace
-
+from rdflib import Namespace, URIRef, Graph
+import rdfalchemy
 
 _reverseNs = {}
 for (k, v) in settings.NS.iteritems():
     _reverseNs[v] = k
+
+
+
+def uri_to_json(uri, db=rdfalchemy.rdfSubject.db):
+    triples = db.triples((URIRef(uri), None, None))
+    g = Graph()
+    try:
+        while True:
+            g.add(triples.next())
+    except:
+        pass
+    # let's see if it is useful to put also the "ValueOf"
+    triples = db.triples((None, None, URIRef(uri)))
+    try:
+        while True:
+            g.add(triples.next())
+    except:
+        pass 
+    return g.serialize(format='json-ld')
+
+    
 
 
 def splitUri(uri):
