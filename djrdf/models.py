@@ -10,8 +10,9 @@ from django_extensions.db import fields as exfields
 from urlparse import urlsplit
 from import_rdf.models import EntrySite
 from djrdf.tools import uri_to_json
-
-
+from django.contrib.sites.models import Site
+import urllib
+from urlparse import urlsplit
 
 # Serializer
 rdflib.plugin.register('json-ld', rdflib.plugin.Serializer,
@@ -75,6 +76,22 @@ class djRdf(models.Model):
         scheme, host, path, query, fragment = urlsplit(self.uri)
         sp = path.split('/')
         return sp[len(sp) - 2]
+
+    @property
+    def uri_import(self):
+        return u"http://%s/get_rdf/%s" % (\
+            Site.objects.get_current().domain,
+            urllib.quote_plus(self.uri)
+            )
+
+    @property
+    def authority_source(self):
+        scheme, host, path, query, fragment = urlsplit(self.uri)
+        try:
+            es = EntrySite.objects.get(home="%s://%s" % (scheme, host))
+        except EntrySite.DoesNotExist:
+            return None
+        return es.label
 
 
     class Meta:
