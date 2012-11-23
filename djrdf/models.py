@@ -42,6 +42,23 @@ class myRdfSubject(rdfSubject):
             pass
         self._remove(self.db, cascade='all', objectCascade=True)
 
+    @property
+    def uri_import(self):
+        return u"http://%s/get_rdf/%s" % (\
+            Site.objects.get_current().domain,
+            urllib.quote_plus(self.uri)
+            )
+
+    @property
+    def authority_source(self):
+        scheme, host, path, query, fragment = urlsplit(self.uri)
+        try:
+            es = EntrySite.objects.get(home="%s://%s" % (scheme, host))
+        except EntrySite.DoesNotExist:
+            return host
+        return es.label
+
+
     @classmethod
     def importFromEntries(cls):
         """ Import all resources with rdf_type cls.rdf_type from all sites
@@ -77,21 +94,7 @@ class djRdf(models.Model):
         sp = path.split('/')
         return sp[len(sp) - 2]
 
-    @property
-    def uri_import(self):
-        return u"http://%s/get_rdf/%s" % (\
-            Site.objects.get_current().domain,
-            urllib.quote_plus(self.uri)
-            )
 
-    @property
-    def authority_source(self):
-        scheme, host, path, query, fragment = urlsplit(self.uri)
-        try:
-            es = EntrySite.objects.get(home="%s://%s" % (scheme, host))
-        except EntrySite.DoesNotExist:
-            return None
-        return es.label
 
 
     class Meta:
