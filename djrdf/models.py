@@ -44,7 +44,7 @@ class myRdfSubject(rdfSubject):
 
     @property
     def uri_import(self):
-        return u"http://%s/get_rdf/%s" % (\
+        return u"http://%s/get_rdf/?url=%s" % (\
             Site.objects.get_current().domain,
             urllib.quote_plus(self.uri)
             )
