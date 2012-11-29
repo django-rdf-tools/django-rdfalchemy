@@ -16,6 +16,8 @@ for (k, v) in settings.NS.iteritems():
 def uri_to_json(uri, db=rdfalchemy.rdfSubject.db):
     triples = db.triples((URIRef(uri), None, None))
     g = Graph()
+    for k in settings.NS: 
+        g.bind(k, settings.NS[k])
     try:
         while True:
             g.add(triples.next())
