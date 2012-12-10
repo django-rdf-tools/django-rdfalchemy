@@ -20,7 +20,7 @@ for (k, v) in settings.NS.iteritems():
 # triples list in parameters.
 # If this method is called, this means that from de subject of the triples
 # its class has been set
-def addTriples(uri, triples, db=rdfSubject.db):
+def addTriples(uri, triples, undirect_triples, db=rdfSubject.db):
     # store  the triples according to the pred
     pred = {}
     for (s, p, o) in triples:
@@ -32,9 +32,21 @@ def addTriples(uri, triples, db=rdfSubject.db):
     for (p, olist) in pred.iteritems():
         # first suppress the old value
         db.remove((uri, p, None))
-
         for o in olist:
             db.add((uri, p, o))
+
+    pred = {}
+    for (s, p, o) in undirect_triples:
+        if p in pred:
+            pred[p].append(s)
+        else:
+            pred[p] = [s]
+    for (p, slist) in pred.iteritems():
+        # first suppress the old value
+        db.remove((None, p, uri))
+        for s in slist:
+            db.add((s, p, uri))
+
 
         # Bof ce qui suit ne sert à rien.... les 2 lignes qui 
         # précèdent suffisent

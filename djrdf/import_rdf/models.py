@@ -16,6 +16,7 @@ import djrdf
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 from rdfalchemy.orm import mapper
+from urlparse import urlsplit
 
 # plugin.register(
 #         'SPARQLStore', store.Store,
@@ -95,6 +96,23 @@ class EntrySite(models.Model):
     def addLog(self, log):
         self.logs = "%s : %s \n%s" % (datetime.datetime.now(), log, self.logs)
 
+    def is_local(self, uri):
+        if not isinstance(uri, URIRef) and hasattr(uri, 'uri'):
+            uri = uri.uri
+        scheme, host, path, query, fragment = urlsplit(uri)
+        scheme, host_self, path, query, fragment = urlsplit(self.home)
+        return host.startswith(host_self)
+
+    def is_common(self, uri):
+        if not isinstance(uri, URIRef) and hasattr(uri, 'uri'):
+            uri = uri.uri
+        scheme, host, path, query, fragment = urlsplit(uri)
+        uri_domain = "%s://%s" % (scheme, host)
+        for cd in settings.COMMON_DOMAINS:
+            if cd.startswith(uri_domain):
+                return True
+        return False
+
 
     # Using a 'construct query' this method imports triples
     # from the graph (the first time, and for dumps the graph is self.parql())
@@ -145,7 +163,7 @@ class EntrySite(models.Model):
 
                 addtriples = []
                 triples = list(graph.triples((subject, None, None)))
-                triples.extend(list(graph.triples((None, None, subject))))
+                undirect_triples = list(graph.triples((None, None, subject)))
                 # If a triple <old_uri> dct.isReplacedBy <new_uri> exists, this supposed
                 # the new_uri is up_to_date and the 'domain' which was hosting old_uri
                 # aggrees this renaming of uri. The aggregator has just to registered it
@@ -174,43 +192,29 @@ class EntrySite(models.Model):
                     for  (s, p, o) in triples: 
                         # Skip triples belong to foreign "context", which correspond to
                         # "imported" triples in this application
-                        pNs = djrdf.tools.splitUri(p)[0]
                         # local property case
-                        if pNs.startswith(self.home):
+                        if self.is_local(p):
                             addtriples.append((s, p, o))
                         else:
-                            sNs = djrdf.tools.splitUri(s)[0]
-                            if sNs.startswith(self.home):
+                            if self.is_local(s):
                                 addtriples.append((s, p, o))
-                            # or sNs.startswith(COMMON_DOMAINS)
-                            elif settings.COMMON_DOMAINS != []:
-                                i = 0
-                                sw = sNs.startswith(settings.COMMON_DOMAINS[i])
-                                while (not sw) and (i < len(settings.COMMON_DOMAINS) - 1):
-                                    i = i + 1
-                                    sw = sNs.startswith(settings.COMMON_DOMAINS[i])
-                                if sw:
-                                    addtriples.append((s, p, o))
+                            elif self.is_common(s):
+                                addtriples.append((s, p, o))
                             elif isinstance(o, URIRef):
-                                oNs = djrdf.tools.splitUri(o)[0]
-                                if oNs.startswith(self.home):
+                                if self.is_local(o):
                                     addtriples.append((s, p, o))
                                 else:
                                     self.addLog("The triple (%s,%s,%s) CANNOT be added" % (s, p, o))
                             else:
                                 self.addLog("The triple (%s,%s,%s) CANNOT be added" % (s, p, o))
 
-                if djRdfModel and addtriples != []:
+                if djRdfModel:
                     djSubject, created = djRdfModel.objects.get_or_create(uri=subject)
-                    djrdf.tools.addTriples(subject, addtriples, sesame)
+                    djrdf.tools.addTriples(subject, addtriples, undirect_triples,  sesame)
                     djSubject.save()
-                elif addtriples == []:
-                    print "No triple could be imported for %s" % subject
-                # There is no djrdf model for the rdf:type of the subject
-                # the selected type are still add
                 else:
-                    print "When no djRdfModel exists for %s" % subject
-                    djrdf.tools.addTriples(subject, addtriples, sesame)
+                    # print "When no djRdfModel exists for %s" % subject
+                    djrdf.tools.addTriples(subject, addtriples, undirect_triples, sesame)
 
         for t in unknownTypes:
             self.addLog("The rdf:type %s is not handled yet by the aggregator" % t)
