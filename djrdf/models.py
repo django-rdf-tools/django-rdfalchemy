@@ -3,7 +3,6 @@ from django.utils.translation import ugettext_lazy as _
 from django.db import models
 # from django.db.models import CharField
 from rdfalchemy import rdfSubject, rdfSingle
-from rdfalchemy.descriptors import rdfAbstract
 import rdflib
 from django.conf import settings
 from django_extensions.db import fields as exfields
@@ -12,13 +11,14 @@ from import_rdf.models import EntrySite
 from djrdf.tools import uri_to_json
 from django.contrib.sites.models import Site
 import urllib
-from urlparse import urlsplit
+import logging
+
 
 # Serializer
 rdflib.plugin.register('json-ld', rdflib.plugin.Serializer,
         'rdflib_jsonld.jsonld_serializer', 'JsonLDSerializer')
 
-
+log = logging.getLogger('djrdf')
 
 
 # A class where every common methods are stored
@@ -57,6 +57,7 @@ class myRdfSubject(rdfSubject):
         except EntrySite.DoesNotExist:
             return host
         return es.label
+
 
 
     @classmethod
@@ -115,10 +116,10 @@ class djRdf(models.Model):
                 kwargs['uri'] = None
                 a0 = args[0]
                 lf = self.__class__._meta.local_fields
-                n = lf.__len__()
+                n = len(lf)
                  # In this case the args are a rows from the django database
                 if isinstance(a0, int):
-                    if (args.__len__() == n):
+                    if (len(args) == n):
                         for i in range(n):
                             kwargs[lf[i].name] = args[i]
                     else:
@@ -171,98 +172,6 @@ class djRdf(models.Model):
         # Call the "real" save() method.
         super(djRdf, self).save(*args, **kwargs)
 
-    # This method is used to build and set the attributs according to the
-    # triples list in parameters.
-    # If this method is called, this means that from de subject of the triples
-    # its class has been set
-    def addTriples(self, triples, db):
-        # store  the triples according to the pred
-        log = ''
-        pred = {}
-        for (s, p, o) in triples:
-            if p in pred:
-                pred[p].append(o)
-            else:
-                pred[p] = [o]
-        attrlist = self.__class__.__dict__
-        for (p, olist) in pred.iteritems():
-            # first suppress the old value
-            oldvalue = db.triples((self, p, None))
-            for tr in oldvalue:
-                try:
-                    db.remove(tr)
-                except Exception:
-                    log = log + u'Can NOT to remove triples %s %s %s \n' % tr
-            # look for an attribute corresponding to this predicate
-            attr = None
-            for (aname, adef) in attrlist.iteritems():
-                if isinstance(adef, rdfAbstract):
-                    if (adef.pred == p):
-                        attr = aname
-                        break
-
-            # This attribute does not exist yet. Just create id and set its value
-            if (attr == None):
-                # version simplifiée
-                for o in olist:
-                    db.add((self.resUri, p, o))
-                    log = log + u'Attr %s does not exist for %s\n' % (p, self)
-
-                # DOES NOT WORK with the abstract models
-                # # Introspection version: attributes create on the fly
-                # # The attribute name is made from the predicate uri...
-                # # Hope it could be safe.
-                # attr = prefixNameForPred(p)
-                # # special case for rdf_type because of ....
-                # # triples are simply added
-                # if attr == 'rdf_type':
-                #     for o in olist:
-                #         db.add((self.resUri, p, o))
-                # else:
-                #     if attr in attrlist:
-                #         # choose another name
-                #         raise Exception("NYI chose an other name for %s" % attr)
-                #     # the cardinality defined if we use a rdfSingle or rdfMultiple
-                #     # Thus we need to parse the graph corresponding to the URI of the property
-                #     # TODO : something more complex to deal with owl:cardinality
-                #     gr = rdflib.Graph()
-                #     try:
-                #         gr.parse(p)
-                #     except:
-                #         # It is impossible to access the the graph of the
-                #         # property. Let's do the simplest thing we could do
-                #         for o in olist:
-                #             db.add((self.resUri, p, o))
-                #     types = gr.objects(p, settings.NS.rdf.type)
-                #     ranges = list(gr.objects(p, settings.NS.rdfs.range))
-                #     if settings.NS.owl.FunctionalProperty in types or settings.NS.owl.InverseFunctionalProperty in types:
-                #         # look for possible range_type
-                #         if len(ranges) == 1  and not (settings.NS.rdfs.Literal in ranges):
-                #             descriptor = rdfSingle(p, range_type=ranges[0])
-                #         else:
-                #             descriptor = rdfSingle(p)
-                #         setattr(self.__class__, attr, descriptor)
-                #         FlyAttr.objects.get_or_create(modelName=self.__class__.__name__,
-                #                     key=attr,
-                #                     value=pickle.dumps(descriptor))
-                #         setattr(self, attr, olist[0])
-                #     else:
-                #         # look for possible range_type
-                #         if len(ranges) == 1  and not (settings.NS.rdfs.Literal in ranges): 
-                #             descriptor = rdfMultiple(p, range_type=ranges[0])
-                #         else:
-                #             descriptor = rdfMultiple(p)
-                #         setattr(self.__class__, attr, descriptor)
-                #         FlyAttr.objects.get_or_create(modelName=self.__class__.__name__,
-                #                     key=attr,
-                #                     value=pickle.dumps(descriptor))
-                #         setattr(self, attr, olist) 
-            else:
-                # attr contains the name of the attribute.... just set the new values
-                if isinstance(getattr(self.__class__, attr), rdfSingle):
-                    setattr(self, attr, olist[0])
-                else:
-                    setattr(self, attr, olist)
 
     def toJson(self):
         return uri_to_json(self.uri, self.db)
@@ -280,6 +189,9 @@ class djRdf(models.Model):
         else:
             for o in model.objects.all():
                 o.delete()
+
+
+
 
 
 

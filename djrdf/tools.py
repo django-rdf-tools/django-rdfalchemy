@@ -1,11 +1,14 @@
 # -*- coding:utf-8 -*-
 # Some useful functions to deal with rdflib's URIRef and Namespaces
-
 from django.conf import settings
 from django.db import models
 import djrdf
 from rdflib import Namespace, URIRef, Graph
-import rdfalchemy
+from rdfalchemy import rdfSingle, rdfSubject
+from rdfalchemy.descriptors import rdfAbstract
+import logging
+
+log = logging.getLogger('djrdf')
 
 _reverseNs = {}
 for (k, v) in settings.NS.iteritems():
@@ -13,7 +16,51 @@ for (k, v) in settings.NS.iteritems():
 
 
 
-def uri_to_json(uri, db=rdfalchemy.rdfSubject.db):
+# This method is used to build and set the attributs according to the
+# triples list in parameters.
+# If this method is called, this means that from de subject of the triples
+# its class has been set
+def addTriples(uri, triples, db=rdfSubject.db):
+    # store  the triples according to the pred
+    pred = {}
+    for (s, p, o) in triples:
+        if p in pred:
+            pred[p].append(o)
+        else:
+            pred[p] = [o]
+    # attrlist = uri.__class__.__dict__  # voir les commentaires si dessous
+    for (p, olist) in pred.iteritems():
+        # first suppress the old value
+        db.remove((uri, p, None))
+
+        for o in olist:
+            db.add((uri, p, o))
+
+        # Bof ce qui suit ne sert à rien.... les 2 lignes qui 
+        # précèdent suffisent
+        # # look for an attribute corresponding to this predicate
+        # attr = None
+        # for (aname, adef) in attrlist.iteritems():
+        #     if isinstance(adef, rdfAbstract):
+        #         if (adef.pred == p):
+        #             attr = aname
+        #             break
+
+        # # This attribute does not exist yet. Just create id and set its value
+        # if (attr == None):
+        #     # version simplifiée
+        #     for o in olist:
+        #         db.add((uri, p, o))
+        #         # log.debug(u'Attr %s does not exist for %s\n' % (p, uri))
+        # else:
+        #     # attr contains the name of the attribute.... just set the new values
+        #     if isinstance(getattr(uri.__class__, attr), rdfSingle):
+        #         setattr(uri, attr, olist[0])
+        #     else:
+        #         setattr(uri, attr, olist)
+
+
+def uri_to_json(uri, db=rdfSubject.db):
     triples = db.triples((URIRef(uri), None, None))
     g = Graph()
     for k in settings.NS: 
