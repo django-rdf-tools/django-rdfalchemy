@@ -17,6 +17,9 @@ from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 from rdfalchemy.orm import mapper
 from urlparse import urlsplit
+import logging
+
+log = logging.getLogger('pes')
 
 # plugin.register(
 #         'SPARQLStore', store.Store,
@@ -136,11 +139,12 @@ class EntrySite(models.Model):
             stored_date = list(sesame.objects(subject, settings.NS.dct.modified))
             update_date = list(graph.objects(subject, settings.NS.dct.modified))
             replacedBy = list(graph.objects(subject, settings.NS.dct.isReplacedBy))
+            deletedOn = list(graph.objects(subject, settings.NS.ess.deletedOn))
 
             if  (not force) and len(update_date) == 1 and len(stored_date) == 1 and update_date[0].toPython() <= stored_date[0].toPython():
-                print u"Nothing to update for %s" % subject
+                log.debug(u"Nothing to update for %s" % subject)
             else:
-                print "Add %s in %s" % (subject, repository) 
+                log.debug("Handle %s in %s" % (subject, repository))
                 types = list(graph.objects(subject, settings.NS.rdf.type))
 
                 # look for a type corresponding to a mapped RDFAlchemy model
@@ -186,6 +190,15 @@ class EntrySite(models.Model):
                         oldSubject.delete()
                         djSubject, created = djRdfModel.objects.get_or_create(uri=newSubject)
                         djSubject.save()  # To publish updates
+                elif len(deletedOn) == 1:
+                    if djRdfModel:
+                        djSubject, created = djRdfModel.objects.get_or_create(uri=subject)
+                        djSubject.remove()
+                    elif RdfModel:
+                        subject.remove()
+                    else:
+                        sesame.remove((subject, None, None))
+                        sesame.remove((None, None, subject))
                 else:
                     addtriples = []
                     undirect_triples = list(graph.triples((None, None, subject)))
@@ -278,7 +291,7 @@ class EntrySite(models.Model):
         for f in getattr(settings, 'FEED_MODELS', []):
             feed_url = self.feed + f + '/'
             parsedFeed = feedparser.parse(feed_url)
-            print "Parse feed %s" % feed_url
+            log.debug("Parse feed %s" % feed_url)
             for entry in parsedFeed.entries:
                 fd, fname = tempfile.mkstemp()
                 os.write(fd, entry.summary)
