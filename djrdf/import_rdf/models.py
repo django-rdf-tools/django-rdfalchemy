@@ -146,7 +146,8 @@ class EntrySite(models.Model):
                 # look for a type corresponding to a mapped RDFAlchemy model
                 RdfModel, djRdfModel = None, None
                 i = 0
-                while not RdfModel:
+                n = len(types)
+                while i < n and not RdfModel:
                     str_type = str(types[i])
                     if str_type in mapper():
                         RdfModel = mapper()[str_type]
@@ -161,9 +162,6 @@ class EntrySite(models.Model):
                     except KeyError:
                         djRdfModel = None
 
-                addtriples = []
-                triples = list(graph.triples((subject, None, None)))
-                undirect_triples = list(graph.triples((None, None, subject)))
                 # If a triple <old_uri> dct.isReplacedBy <new_uri> exists, this supposed
                 # the new_uri is up_to_date and the 'domain' which was hosting old_uri
                 # aggrees this renaming of uri. The aggregator has just to registered it
@@ -189,7 +187,9 @@ class EntrySite(models.Model):
                         djSubject, created = djRdfModel.objects.get_or_create(uri=newSubject)
                         djSubject.save()  # To publish updates
                 else:
-                    for  (s, p, o) in triples: 
+                    addtriples = []
+                    undirect_triples = list(graph.triples((None, None, subject)))
+                    for  (s, p, o) in list(graph.triples((subject, None, None))): 
                         # Skip triples belong to foreign "context", which correspond to
                         # "imported" triples in this application
                         # local property case
@@ -207,14 +207,30 @@ class EntrySite(models.Model):
                                     self.addLog("The triple (%s,%s,%s) CANNOT be added" % (s, p, o))
                             else:
                                 self.addLog("The triple (%s,%s,%s) CANNOT be added" % (s, p, o))
+                    undirect_triples = []
+                    for (s, p, o) in list(graph.triples((None, None, subject))):
+                        if self.is_local(p):
+                            undirect_triples.append((s, p, o))
+                            if self.is_local(o):
+                                undirect_triples.append((s, p, o))
+                            elif self.is_common(o):
+                                undirect_triples.append((s, p, o))
+                            elif isinstance(s, URIRef):
+                                if self.is_local(s):
+                                    undirect_triples.append((s, p, o))
+                                else:
+                                    self.addLog("The triple (%s,%s,%s) CANNOT be added" % (s, p, o))
+                            else:
+                                self.addLog("The triple (%s,%s,%s) CANNOT be added" % (s, p, o))
 
-                if djRdfModel:
-                    djSubject, created = djRdfModel.objects.get_or_create(uri=subject)
-                    djrdf.tools.addTriples(subject, addtriples, undirect_triples,  sesame)
-                    djSubject.save()
-                else:
-                    # print "When no djRdfModel exists for %s" % subject
-                    djrdf.tools.addTriples(subject, addtriples, undirect_triples, sesame)
+
+                    if djRdfModel:
+                        djSubject, created = djRdfModel.objects.get_or_create(uri=subject)
+                        djrdf.tools.addTriples(subject, addtriples, undirect_triples,  sesame)
+                        djSubject.save()
+                    else:
+                        # print "When no djRdfModel exists for %s" % subject
+                        djrdf.tools.addTriples(subject, addtriples, undirect_triples, sesame)
 
         for t in unknownTypes:
             self.addLog("The rdf:type %s is not handled yet by the aggregator" % t)
@@ -239,31 +255,16 @@ class EntrySite(models.Model):
             sesame = Repository(repository, context=ctx)
         subjects = sesame.subjects(settings.NS.rdf.type, rdfType)
         for subject in subjects:
-            if unicode(subject).startswith(self.home):
-                triples = sesame.triples((subject, None, None))
-                for tr in triples:
-                    try:
-                        sesame.remove(tr)
-                    except:
-                        pass
+            if self.is_local(subject):
+                sesame.remove((subject, None, None))
         preds = sesame.predicates(None, None)
         for p in preds:
-            if unicode(p).startswith(self.home):
-                triples = sesame.triples((None, p, None))
-                for tr in triples:
-                    try:
-                        sesame.remove(tr)
-                    except:
-                        pass
+            if self.is_local(p):
+                sesame.remove((None, p, None))
         objs = sesame.objects(None, None)
         for o in objs:
-            if isinstance(o, URIRef) and str(o).startswith(self.home):
-                triples = sesame.triples((None, None, o))
-                for tr in triples:
-                    try:
-                        sesame.remove(tr)
-                    except:
-                        pass
+            if isinstance(o, URIRef) and self.is_local(o):
+                sesame.remove((None, None, o))
         # Suppress also instance in db
         for m in models.get_models():
             if djrdf.models.djRdf in m.__mro__:

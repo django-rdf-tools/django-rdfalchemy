@@ -27,10 +27,8 @@ class Repository(SesameGraph):
         if isinstance(s, BNode):
             pass
         else:
-            # print "ENTER ADDD with object %s %s %s" % (s, p, o)
-            # print "N3 de objects is %s " % o.n3()
-            # print "TRY NT %s" % _xmlcharref_encode(o.n3())
-            # print "try encoding %s " % o.n3().encode("utf-8")
+            # heu le conde si dessous est surement faux.... les <> sont deja mis
+            # a verifier
             if context:
                 ctx = '<%s>' % context
             else:

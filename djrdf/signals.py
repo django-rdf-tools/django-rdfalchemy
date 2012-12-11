@@ -34,7 +34,7 @@ def letsCallDistributionTaskProcess():
 def post_save_callback(sender, instance, **kwargs):
     log.debug("Post save callback with sender %s and instance %s" % (sender, instance))
     if isinstance(instance, djRdf):
-        log.debug(u"Publish feeds for instance  %s " % instance)
+        # log.debug(u"Publish feeds for instance  %s " % instance)
         site = Site.objects.get_current()
         model = sender.__name__.lower()
         feed_url = 'http://%s/feed/%s/' % (site, model)
@@ -42,15 +42,15 @@ def post_save_callback(sender, instance, **kwargs):
         subhub.publish([feed_url, feed_url_obj], instance.uri, False)
     elif isinstance(instance, subhub.models.DistributionTask) and settings.SUBHUB_MAINTENANCE_AUTO:
         try:
-            log.debug("before call ENQUEUE, tasks %s" % len(subhub.models.DistributionTask.objects.all()))
+            # log.debug("before call ENQUEUE, tasks %s" % len(subhub.models.DistributionTask.objects.all()))
             q.enqueue(letsCallDistributionTaskProcess)
-            log.debug('after call ENQUEUE')
+            # log.debug('after call ENQUEUE')
         except Exception, e:
             log.warning(u"%s" % e)
     elif isinstance(instance, subhub.models.SubscriptionTask) and settings.SUBHUB_MAINTENANCE_AUTO:
         # call the maintenance
             try:
-                log.info(u'Processing verification queue...')
+                # log.info(u'Processing verification queue...')
                 subhub.models.SubscriptionTask.objects.process(log=log)
             except subhub.utils.LockError, e:
                 log.warning(u"%s" % e)
