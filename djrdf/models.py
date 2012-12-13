@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 from django.utils.translation import ugettext_lazy as _
+import slugify
 from django.db import models
 # from django.db.models import CharField
 from rdfalchemy import rdfSubject, rdfSingle
@@ -12,6 +13,7 @@ from djrdf.tools import uri_to_json
 from django.contrib.sites.models import Site
 import urllib
 import logging
+import shortuuid
 
 
 # Serializer
@@ -88,6 +90,8 @@ class djRdf(models.Model):
     created = exfields.CreationDateTimeField(_(u'created'), null=True)
     modified = exfields.ModificationDateTimeField(_(u'modified'), null=True)
     uri = models.CharField(max_length=250)
+
+    uri_data_name = 'default'
 
     @property
     def uuid(self):
@@ -168,7 +172,7 @@ class djRdf(models.Model):
         # if self.uri != '':
         #     # It is important, if the resource is created in django ORM
         #     # first and if the uri does not exists before
-        #     self.db.add((self, settings.NS.rdf.type, self.rdf_type))
+        self.db.add((self, settings.NS.rdf.type, self.rdf_type))
         # Call the "real" save() method.
         super(djRdf, self).save(*args, **kwargs)
 
@@ -190,9 +194,13 @@ class djRdf(models.Model):
             for o in model.objects.all():
                 o.delete()
 
-
-
-
+    @classmethod
+    def create_uri(cls, label=None):
+        host = "http://%s/id/%s/" % (Site.objects.get_current().domain, cls.uri_data_name) 
+        if not label:
+            return host + '%s/' % shortuuid.uuid()
+        else:
+            return host + '%s/' % slugify.slugify(label)
 
 
 

@@ -11,11 +11,24 @@ def posint(value, field):
 
 
 
+class djRdfFieldSet(FieldSet):
+
+    # without uri,rdflachemy build blank node
+    def sync(self, uri=None):
+        if not uri:
+            super(djRdfFieldSet, self).sync()
+        else:
+            self.model.uri = uri
+            self.model.save()
+            super(djRdfFieldSet, self).sync()
+
+
+
 class djRdfForm():
     model = djRdf
 
     def form(self, obj):
-        fs = FieldSet(self.model)
+        fs = djRdfFieldSet(self.model)
         fs = fs.bind(obj)
         fs = self._configure(fs)
         fs.rebind(obj)

@@ -8,7 +8,8 @@ class AttributeDict(dict):
 
 from rdflib import Namespace
 COMMON_DOMAINS = [
-    'http://data.economie-solidaire.fr',
+    'http://thess.economie-solidaire.fr',
+    'http://ns.economie-solidaire.fr',
     'http://rdf.insee.fr/geo/'
     ]
 

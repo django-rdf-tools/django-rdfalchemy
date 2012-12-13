@@ -139,7 +139,7 @@ class EntrySite(models.Model):
             stored_date = list(sesame.objects(subject, settings.NS.dct.modified))
             update_date = list(graph.objects(subject, settings.NS.dct.modified))
             replacedBy = list(graph.objects(subject, settings.NS.dct.isReplacedBy))
-            deletedOn = list(graph.objects(subject, settings.NS.ess.deletedOn))
+            deletedOn = list(graph.objects(subject, settings.NS.ov.deletedOn))
 
             if  (not force) and len(update_date) == 1 and len(stored_date) == 1 and update_date[0].toPython() <= stored_date[0].toPython():
                 log.debug(u"Nothing to update for %s" % subject)
