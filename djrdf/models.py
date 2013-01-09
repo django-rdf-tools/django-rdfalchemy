@@ -159,7 +159,7 @@ class djRdf(models.Model):
         return "%s('%s')" % (self.__class__.__name__, self.n3())
 
     def __str__(self):
-        return str(self.resUri)
+        return unicode(self.resUri)
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self._get_pk_val() == other._get_pk_val() and self.uri == other.uri
