@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 from django.utils.translation import ugettext_lazy as _
+from django.conf import settings
 from djrdf.models import djRdf
 from formalchemy.ext.rdf import FieldSet, Grid
 from formalchemy.validators import ValidationError
