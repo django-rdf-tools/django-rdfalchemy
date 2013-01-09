@@ -31,7 +31,10 @@ def addTriples(uri, triples, undirect_triples, db=rdfSubject.db):
     # attrlist = uri.__class__.__dict__  # voir les commentaires si dessous
     for (p, olist) in pred.iteritems():
         # first suppress the old value
-        db.remove((uri, p, None))
+        try:
+            db.remove((uri, p, None))
+        except Exception, e:
+            log.debug('Cannot remove %s, %s' % (uri, e))
         for o in olist:
             db.add((uri, p, o))
 
