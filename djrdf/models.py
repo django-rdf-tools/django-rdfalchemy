@@ -138,7 +138,7 @@ class djRdf(models.Model):
                         raise Exception(_(u'Unhandled call for object %s with args %s and kwargs') % (self, args, kwargs))
                     # We have to make the links with the django objects, if it exists
                     try:
-                        o = self.__class__.objects.get(uri=kwargs['uri'])
+                        o = self.__class__.objects.get(uri=unicode(kwargs['uri']))
                         # id and uri are already set
                         kwargs['id'] = o.id
                         for i in range(2, n):

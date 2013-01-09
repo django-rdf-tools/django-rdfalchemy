@@ -186,13 +186,13 @@ class EntrySite(models.Model):
 
                     # if subject is  django object
                     if djRdfModel:
-                        oldSubject = djRdfModel.objects.get(uri=subject)
+                        oldSubject = djRdfModel.objects.get(uri=unicode(subject))
                         oldSubject.delete()
-                        djSubject, created = djRdfModel.objects.get_or_create(uri=newSubject)
+                        djSubject, created = djRdfModel.objects.get_or_create(uri=unicode(newSubject))
                         djSubject.save()  # To publish updates
                 elif len(deletedOn) == 1:
                     if djRdfModel:
-                        djSubject, created = djRdfModel.objects.get_or_create(uri=subject)
+                        djSubject, created = djRdfModel.objects.get_or_create(uri=unicode(subject))
                         djSubject.remove()
                     elif RdfModel:
                         subject.remove()
@@ -238,7 +238,7 @@ class EntrySite(models.Model):
 
 
                     if djRdfModel:
-                        djSubject, created = djRdfModel.objects.get_or_create(uri=subject)
+                        djSubject, created = djRdfModel.objects.get_or_create(uri=unicode(subject))
                         djrdf.tools.addTriples(subject, addtriples, undirect_triples,  sesame)
                         djSubject.save()
                     else:
@@ -284,8 +284,6 @@ class EntrySite(models.Model):
                 for o in m.objects.filter(uri__contains=self.home):
                     o.delete()
   
-
-
 
     def updateFromFeeds(self, repository, ctx='default'):
         for f in getattr(settings, 'FEED_MODELS', []):
